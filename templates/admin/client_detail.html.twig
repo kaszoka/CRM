@@ -1,0 +1,549 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}{% endblock %}
+
+{% block page_content %}
+<style>
+    .client-header {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 28px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--tabler-border, #e6e7e9);
+    }
+    .client-header .client-avatar-lg {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        background: var(--tabler-badge-info-bg, #e7f1ff);
+        color: var(--tabler-primary, #206bc4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .client-header .client-header-info h1 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--tabler-text, #1e293b);
+        margin: 0;
+        letter-spacing: -0.3px;
+    }
+    .client-header .client-header-info .client-nip {
+        font-size: 13.5px;
+        color: var(--tabler-text-muted, #626976);
+        margin-top: 2px;
+    }
+    .client-header .client-header-badges {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+    }
+    .client-header .header-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 6px;
+    }
+    .header-badge.yes { background: #e6f7ed; color: #2fb344; }
+    .header-badge.yes-purple { background: #f3eefc; color: #9f4cf6; }
+    .header-badge.no { background: #f1f5f9; color: #94a3b8; }
+
+    .client-header-right {
+        margin-left: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+    }
+    .client-meta {
+        font-size: 11px;
+        color: var(--tabler-text-muted, #94a3b8);
+        text-align: right;
+    }
+    .client-meta-row {
+        display: flex;
+        gap: 6px;
+        align-items: baseline;
+        justify-content: flex-end;
+    }
+    .client-meta-label {
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+        opacity: 0.8;
+    }
+    .client-meta-value {
+        font-weight: 500;
+        color: var(--tabler-text, #1e293b);
+    }
+
+    .client-header .client-actions {
+        display: flex;
+        gap: 8px;
+    }
+    .client-actions .act-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+    }
+    .act-btn.edit { background: #206bc4; color: #fff; }
+    .act-btn.edit:hover { background: #1a56a0; }
+    .act-btn.back { background: var(--tabler-card-bg, #fff); border: 1px solid var(--tabler-border, #e6e7e9); color: var(--tabler-text-muted, #626976); }
+    .act-btn.back:hover { background: var(--tabler-row-hover, #f8fafc); color: var(--tabler-text, #1e293b); }
+    .act-btn.delete { background: var(--tabler-card-bg, #fff); border: 1px solid var(--tabler-border, #e6e7e9); color: var(--tabler-danger, #d63939); }
+    .act-btn.delete:hover { background: var(--tabler-badge-danger-bg, #fce8e8); border-color: var(--tabler-border, #f5c2c2); }
+
+    /* Cards grid */
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    @media (max-width: 992px) { .detail-grid { grid-template-columns: 1fr; } }
+
+    /* ─── Mobile ≤640px ──────────────────────────────── */
+    @media (max-width: 640px) {
+        .client-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .client-header .client-header-info h1 { font-size: 18px; }
+        .client-header-right {
+            margin-left: 0;
+            align-items: flex-start;
+            width: 100%;
+        }
+        .client-meta { text-align: left; }
+        .client-meta-row { justify-content: flex-start; }
+        .client-header .client-actions { width: 100%; }
+        .client-header .client-actions .act-btn { flex: 1; justify-content: center; }
+        .detail-row {
+            flex-direction: column;
+            gap: 4px;
+        }
+        .detail-row .dr-label { width: auto; }
+    }
+
+    .detail-card {
+        background: var(--tabler-card-bg, #fff);
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 8px;
+    }
+    .detail-card.full-width { grid-column: 1 / -1; }
+
+    .detail-card .dc-head {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--tabler-border, #e6e7e9);
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--tabler-text, #1e293b);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .detail-card .dc-head i { color: var(--tabler-text-muted, #626976); font-size: 14px; }
+
+    .detail-card .dc-body { padding: 4px 0; }
+
+    .detail-row {
+        display: flex;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--tabler-border, #f4f6f8);
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row .dr-label {
+        width: 160px;
+        flex-shrink: 0;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--tabler-text-muted, #626976);
+    }
+    .detail-row .dr-value {
+        flex: 1;
+        font-size: 13.5px;
+        color: var(--tabler-text, #1e293b);
+    }
+    .detail-row .dr-value a {
+        color: var(--tabler-primary, #206bc4);
+        text-decoration: none;
+    }
+    .detail-row .dr-value a:hover { text-decoration: underline; }
+
+    .inline-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+    .inline-badge.green { background: #e6f7ed; color: #2fb344; }
+    .inline-badge.gray { background: #f1f5f9; color: #94a3b8; }
+    .inline-badge.blue { background: #e7f1ff; color: #206bc4; }
+    .inline-badge.orange { background: #fff3e0; color: #f76707; }
+
+    .notes-text {
+        white-space: pre-wrap;
+        line-height: 1.6;
+    }
+
+    /* Task timeline */
+    .task-timeline {
+        padding: 16px 20px;
+    }
+    .task-timeline-empty {
+        text-align: center;
+        padding: 28px 20px;
+        color: var(--tabler-text-light, #94a3b8);
+        font-size: 13.5px;
+    }
+    .task-timeline-empty i {
+        font-size: 28px;
+        display: block;
+        margin-bottom: 8px;
+        opacity: 0.5;
+    }
+    .tl-item {
+        display: flex;
+        gap: 16px;
+        position: relative;
+        padding-bottom: 20px;
+    }
+    .tl-item:last-child { padding-bottom: 0; }
+    .tl-item:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: 17px;
+        top: 36px;
+        bottom: 0;
+        width: 2px;
+        background: var(--tabler-border, #e6e7e9);
+    }
+    .tl-dot {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 13px;
+        z-index: 1;
+    }
+    .tl-dot.status-nowe { background: #e7f1ff; color: #206bc4; }
+    .tl-dot.status-w_trakcie { background: #fff3e0; color: #f76707; }
+    .tl-dot.status-zakonczone { background: #e6f7ed; color: #2fb344; }
+    .tl-content {
+        flex: 1;
+        min-width: 0;
+        background: var(--tabler-row-hover, #f8fafc);
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 8px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .tl-content:hover {
+        border-color: var(--tabler-primary, #c5d4e8);
+        background: var(--tabler-primary-light, #f0f5ff);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .tl-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 6px;
+    }
+    .tl-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--tabler-text, #1e293b);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .tl-title a {
+        color: inherit;
+        text-decoration: none;
+    }
+    .tl-title a:hover { color: var(--tabler-primary, #206bc4); }
+    .tl-status {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 5px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .tl-status.s-nowe { background: #e7f1ff; color: #206bc4; }
+    .tl-status.s-w_trakcie { background: #fff3e0; color: #f76707; }
+    .tl-status.s-zakonczone { background: #e6f7ed; color: #2fb344; }
+    .tl-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 12px;
+        color: var(--tabler-text-muted, #626976);
+    }
+    .tl-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .tl-meta i { font-size: 11px; color: #94a3b8; }
+    .tl-priority {
+        font-weight: 600;
+    }
+    .tl-priority.p-wysoki { color: #d63939; }
+    .tl-priority.p-sredni { color: #f76707; }
+    .tl-priority.p-niski { color: #2fb344; }
+</style>
+
+<div class="client-header">
+    <div class="client-avatar-lg">{{ entity.instance.companyName|slice(0, 2)|upper }}</div>
+    <div class="client-header-info">
+        <h1>{{ entity.instance.companyName }}</h1>
+        <div class="client-nip">NIP: {% if entity.instance.nip %}{{ entity.instance.nip }}{% else %}<span style="color:#94a3b8;font-style:italic;">Działalność nierejestrowana</span>{% endif %}</div>
+        <div class="client-header-badges">
+            <span class="header-badge {{ entity.instance.hasBusinessAccount ? 'yes' : 'no' }}">
+                <i class="fa {{ entity.instance.hasBusinessAccount ? 'fa-check' : 'fa-xmark' }}"></i>
+                Konto biznesowe
+            </span>
+            <span class="header-badge {{ entity.instance.hasPurchased ? 'yes-purple' : 'no' }}">
+                <i class="fa {{ entity.instance.hasPurchased ? 'fa-check' : 'fa-xmark' }}"></i>
+                Kupił
+            </span>
+            <span class="header-badge {{ entity.instance.isLocalClient ? 'yes' : 'no' }}">
+                <i class="fa {{ entity.instance.isLocalClient ? 'fa-check' : 'fa-xmark' }}"></i>
+                Klient lokalny
+            </span>
+        </div>
+    </div>
+    <div class="client-header-right">
+        <div class="client-meta">
+            <div class="client-meta-row">
+                <span class="client-meta-label">Utworzono</span>
+                <span class="client-meta-value">
+                    {{ entity.instance.createdAt ? entity.instance.createdAt|date('d.m.Y H:i') : '-' }}
+                </span>
+            </div>
+            <div class="client-meta-row">
+                <span class="client-meta-label">Ostatnia zmiana</span>
+                <span class="client-meta-value">
+                    {{ entity.instance.updatedAt ? entity.instance.updatedAt|date('d.m.Y H:i') : '-' }}
+                </span>
+            </div>
+        </div>
+        <div class="client-actions">
+            <a href="{{ ea_url().setAction('index') }}" class="act-btn back"><i class="fa fa-arrow-left"></i> Wróć</a>
+            {% if is_granted('ROLE_USER') %}
+                <a href="{{ ea_url().setAction('edit').setEntityId(entity.instance.id) }}" class="act-btn edit"><i class="fa fa-pen"></i> Edytuj</a>
+            {% endif %}
+            {% if is_granted('ROLE_ADMIN') %}
+                <form id="del-client-detail" method="POST" action="{{ ea_url().setAction('delete').setEntityId(entity.instance.id) }}" style="display:inline;margin:0;">
+                    <input type="hidden" name="token" value="{{ csrf_token('ea-delete') }}">
+                    <button type="button" class="act-btn delete" style="cursor:pointer;"
+                            onclick="openDeleteModal('del-client-detail', '{{ entity.instance.companyName|e('js') }}')">
+                        <i class="fa fa-trash"></i> Usuń
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="detail-grid">
+
+    <div class="detail-card">
+        <div class="dc-head"><i class="fa fa-address-card"></i> Dane kontaktowe</div>
+        <div class="dc-body">
+            <div class="detail-row">
+                <div class="dr-label">Telefon</div>
+                <div class="dr-value">
+                    {% if entity.instance.phone %}
+                        <a href="tel:{{ entity.instance.phone }}"><i class="fa fa-phone" style="margin-right:4px;font-size:12px;"></i> {{ entity.instance.phone }}</a>
+                    {% else %}<span style="color:#94a3b8;">Brak</span>{% endif %}
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="dr-label">E-mail</div>
+                <div class="dr-value">
+                    {% if entity.instance.email %}
+                        <a href="mailto:{{ entity.instance.email }}"><i class="fa fa-envelope" style="margin-right:4px;font-size:12px;"></i> {{ entity.instance.email }}</a>
+                    {% else %}<span style="color:#94a3b8;">Brak</span>{% endif %}
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="dr-label">Adres</div>
+                <div class="dr-value">{% if entity.instance.fullAddress %}{{ entity.instance.fullAddress }}{% else %}<span style="color:#94a3b8;">Brak</span>{% endif %}</div>
+            </div>
+            <div class="detail-row">
+                <div class="dr-label">Forma kontaktu</div>
+                <div class="dr-value">
+                    {% set methods = entity.instance.contactMethods %}
+                    {% if methods is not empty %}
+                        {% set isNone = entity.instance.isDoNotContact %}
+                        {% if isNone %}
+                            <span class="inline-badge red" style="background:#fde8e8;color:#d63939;border:1px solid #f5c2c2;font-weight:700;">
+                                🚫 Nie kontaktować się
+                            </span>
+                        {% else %}
+                            {% for m in methods %}
+                                <span class="inline-badge blue">{{ m.name }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    {% else %}
+                        <span style="color:#94a3b8;">Nie podano</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="dc-head"><i class="fa fa-briefcase"></i> Informacje biznesowe</div>
+        <div class="dc-body">
+            <div class="detail-row">
+                <div class="dr-label">Branża</div>
+                <div class="dr-value">
+                    {% if entity.instance.industries|length > 0 %}
+                        {% for ind in entity.instance.industries %}
+                            <span class="inline-badge blue" style="margin-right:4px;">{{ ind.name }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span style="color:#94a3b8;">Nie podano</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="dr-label">Asortyment</div>
+                <div class="dr-value">
+                    {% if entity.instance.assortments|length > 0 %}
+                        {% for a in entity.instance.assortments %}
+                            <span class="inline-badge blue" style="margin-right:4px;">{{ a.name }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span style="color:#94a3b8;">Nie podano</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="dr-label">Źródła</div>
+                <div class="dr-value">
+                    {% if entity.instance.sources is defined and entity.instance.sources|length > 0 %}
+                        {% for s in entity.instance.sources %}
+                            <span class="inline-badge blue" style="margin-right:4px;">{{ s.name }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span style="color:#94a3b8;">Nie podano</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="dr-label">Obroty</div>
+                <div class="dr-value">
+                    {% if entity.instance.turnover %}
+                        <strong>{{ entity.instance.turnover|number_format(2, ',', ' ') }} PLN</strong>
+                    {% else %}
+                        <span style="color:#94a3b8;">Nie podano</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-card full-width">
+        <div class="dc-head"><i class="fa fa-sticky-note"></i> Uwagi</div>
+        <div class="dc-body">
+            <div class="detail-row">
+                <div class="dr-value notes-text">{% if entity.instance.notes %}{{ entity.instance.notes }}{% else %}<span style="color:#94a3b8;">Brak uwag</span>{% endif %}</div>
+            </div>
+        </div>
+    </div>
+
+    {% set tasks = entity.instance.tasks|sort((a, b) => b.createdAt <=> a.createdAt) %}
+    <div class="detail-card full-width">
+        <div class="dc-head">
+            <i class="fa fa-list-check"></i> Historia zadań
+            {% if tasks|length > 0 %}
+                <span style="margin-left:auto;font-size:12px;font-weight:400;color:#94a3b8;">{{ tasks|length }} {{ tasks|length == 1 ? 'zadanie' : (tasks|length >= 2 and tasks|length <= 4 ? 'zadania' : 'zadań') }}</span>
+            {% endif %}
+        </div>
+        {% if tasks|length > 0 %}
+        <div class="task-timeline">
+            {% for task in tasks %}
+                {% set taskDetailUrl = ea_url()
+                    .setController('App\\Controller\\Admin\\TaskCrudController')
+                    .setAction('detail')
+                    .setEntityId(task.id) %}
+                {% set statusLabels = { 'nowe': 'Nowe', 'w_trakcie': 'W trakcie', 'zakończone': 'Zakończone' } %}
+                <div class="tl-item">
+                    <div class="tl-dot status-{{ task.status }}">
+                        {% if task.status == 'nowe' %}
+                            <i class="fa fa-plus"></i>
+                        {% elseif task.status == 'w_trakcie' %}
+                            <i class="fa fa-spinner"></i>
+                        {% else %}
+                            <i class="fa fa-check"></i>
+                        {% endif %}
+                    </div>
+                    <div class="tl-content" onclick="window.location='{{ taskDetailUrl }}'">
+                        <div class="tl-top">
+                            <div class="tl-title">
+                                <a href="{{ taskDetailUrl }}" onclick="event.stopPropagation()">{{ task.title }}</a>
+                            </div>
+                            <span class="tl-status s-{{ task.status }}">{{ statusLabels[task.status] ?? task.status }}</span>
+                        </div>
+                        <div class="tl-meta">
+                            <span><i class="fa fa-calendar"></i> {{ task.createdAt ? task.createdAt|date('d.m.Y H:i') : '—' }}</span>
+                            {% if task.dueDate %}
+                                <span><i class="fa fa-clock"></i> Termin: {{ task.dueDate|date('d.m.Y') }}</span>
+                            {% endif %}
+                            <span class="tl-priority p-{{ task.priority == 'średni' ? 'sredni' : task.priority }}">
+                                <i class="fa fa-flag"></i> {{ task.priority|capitalize }}
+                            </span>
+                            {% if task.assignedTo %}
+                                <span><i class="fa fa-user"></i> {{ task.assignedTo }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="task-timeline-empty">
+            <i class="fa fa-clipboard"></i>
+            Brak zadań przypisanych do tego klienta
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<div id="delete-modal" data-controller="delete-modal" data-delete-modal-target="modal" data-action="click->delete-modal#backdrop" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:36px 32px 28px;max-width:400px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,0.22);text-align:center;">
+        <div style="width:60px;height:60px;background:#fce8e8;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+            <i class="fa fa-trash" style="color:#d63939;font-size:24px;"></i>
+        </div>
+        <h3 style="font-size:18px;font-weight:700;color:#1e293b;margin:0 0 10px;">Potwierdź usunięcie</h3>
+        <p id="delete-modal-text" data-delete-modal-target="text" style="font-size:14px;color:#626976;margin:0 0 24px;line-height:1.5;"></p>
+        <div style="display:flex;gap:10px;">
+            <button type="button" data-action="delete-modal#close" onclick="closeDeleteModal()" style="flex:1;padding:11px;border-radius:8px;border:1px solid #e6e7e9;background:#fff;color:#626976;font-size:14px;font-weight:500;cursor:pointer;">Anuluj</button>
+            <button type="button" data-action="delete-modal#confirm" id="delete-modal-confirm" style="flex:1;padding:11px;border-radius:8px;border:none;background:#d63939;color:#fff;font-size:14px;font-weight:700;cursor:pointer;"><i class="fa fa-trash"></i> Tak, usuń</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+

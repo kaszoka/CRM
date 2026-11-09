@@ -1,0 +1,699 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}{% endblock %}
+
+{% block page_content %}
+{% set task = entity.instance %}
+
+<style>
+    .td-wrap { max-width: 900px; margin: 0 auto; }
+
+    .td-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--tabler-text-muted, #626976);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 16px;
+        transition: color 0.15s;
+    }
+    .td-back:hover { color: var(--tabler-primary, #206bc4); }
+
+    .td-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .td-header-left { flex: 1; }
+    .td-header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--tabler-text, #1e293b);
+        margin: 0 0 12px;
+        line-height: 1.3;
+        letter-spacing: -0.3px;
+    }
+    .td-badges {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .td-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .td-badge.priority-high { background: #fce8e8; color: #d63939; }
+    .td-badge.priority-medium { background: #fff3e0; color: #f76707; }
+    .td-badge.priority-low { background: #e6f7ed; color: #2fb344; }
+    .td-badge.status-new { background: #e7f1ff; color: #206bc4; }
+    .td-badge.status-progress { background: #fff3e0; color: #f76707; }
+    .td-badge.status-done { background: #e6f7ed; color: #2fb344; }
+    .td-badge.overdue { background: #fce8e8; color: #d63939; }
+
+    .td-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+    .td-actions a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.15s;
+        border: 1px solid transparent;
+    }
+    .td-actions .btn-edit { background: #206bc4; color: #fff; }
+    .td-actions .btn-edit:hover { background: #1a56a0; }
+    .td-actions .btn-del { background: var(--tabler-card-bg, #fff); color: var(--tabler-danger, #d63939); border-color: var(--tabler-border, #fce8e8); }
+    .td-actions .btn-del:hover { background: var(--tabler-badge-danger-bg, #fce8e8); }
+
+    .td-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+    }
+    @media (max-width: 768px) { .td-grid { grid-template-columns: 1fr; } }
+
+    /* ─── Mobile ≤640px ──────────────────────────────── */
+    @media (max-width: 640px) {
+        .td-wrap { max-width: 100%; }
+        .td-header {
+            flex-direction: column;
+            gap: 14px;
+        }
+        .td-header h1 { font-size: 20px; }
+        .td-actions {
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+            gap: 8px;
+        }
+        .td-actions a {
+            flex: 1;
+            justify-content: center;
+            min-width: 0;
+        }
+    }
+
+    .td-card {
+        background: var(--tabler-card-bg, #fff);
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .td-card-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--tabler-text-muted, #626976);
+        border-bottom: 1px solid var(--tabler-border, #f0f2f5);
+        background: var(--tabler-row-hover, #fafbfc);
+    }
+    .td-card-head i { color: var(--tabler-text-light, #94a3b8); font-size: 13px; }
+    .td-card-body { padding: 18px; }
+
+    .td-desc {
+        font-size: 14px;
+        line-height: 1.65;
+        color: var(--tabler-text, #475569);
+        white-space: pre-line;
+    }
+    .td-desc.empty { color: var(--tabler-text-light, #cdd1d6); font-style: italic; }
+
+    .td-info { display: flex; flex-direction: column; gap: 14px; }
+    .td-info-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .td-info-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+    .td-info-icon.blue { background: #e7f1ff; color: #206bc4; }
+    .td-info-icon.orange { background: #fff3e0; color: #f76707; }
+    .td-info-icon.green { background: #e6f7ed; color: #2fb344; }
+    .td-info-icon.gray { background: #f0f2f5; color: #626976; }
+    .td-info-icon.red { background: #fce8e8; color: #d63939; }
+
+    .td-info-text { flex: 1; }
+    .td-info-label {
+        font-size: 11px;
+        color: var(--tabler-text-light, #94a3b8);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        margin-bottom: 1px;
+    }
+    .td-info-value {
+        font-size: 14px;
+        color: var(--tabler-text, #1e293b);
+        font-weight: 500;
+    }
+
+    .td-assignee-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #e7f1ff;
+        color: #206bc4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .td-client-link {
+        color: #206bc4;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .td-client-link:hover { text-decoration: underline; }
+
+    .td-timestamps {
+        display: flex;
+        gap: 24px;
+        padding: 14px 18px;
+        background: var(--tabler-row-hover, #fafbfc);
+        border-top: 1px solid var(--tabler-border, #f0f2f5);
+        font-size: 12px;
+        color: var(--tabler-text-light, #94a3b8);
+    }
+    .td-timestamps .ts-item i { margin-right: 4px; }
+
+    /* Status buttons */
+    .td-status-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        padding: 14px 18px;
+        background: var(--tabler-card-bg, #fff);
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 10px;
+    }
+    .td-status-bar .sb-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--tabler-text-muted, #626976);
+        margin-right: 8px;
+        white-space: nowrap;
+    }
+    .td-status-bar .sb-btns {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .td-status-bar .sb-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 16px;
+        border-radius: 7px;
+        font-size: 12.5px;
+        font-weight: 600;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        background: none;
+    }
+    .sb-btn.btn-new { background: #f0f6ff; color: #206bc4; border-color: #d4e4f7; }
+    .sb-btn.btn-new:hover { background: #e0edff; }
+    .sb-btn.btn-new.active { background: #206bc4; color: #fff; border-color: #206bc4; }
+    .sb-btn.btn-progress { background: #fff8f0; color: #f76707; border-color: #fde0c0; }
+    .sb-btn.btn-progress:hover { background: #ffefdf; }
+    .sb-btn.btn-progress.active { background: #f76707; color: #fff; border-color: #f76707; }
+    .sb-btn.btn-done { background: #f0faf4; color: #2fb344; border-color: #c8edce; }
+    .sb-btn.btn-done:hover { background: #e0f5e5; }
+    .sb-btn.btn-done.active { background: #2fb344; color: #fff; border-color: #2fb344; }
+
+    /* Notes section */
+    .td-notes-card { margin-top: 20px; }
+    .td-note-form {
+        display: flex;
+        gap: 10px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--tabler-border, #f0f2f5);
+    }
+    .td-note-form textarea {
+        flex: 1;
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-family: inherit;
+        resize: vertical;
+        min-height: 60px;
+        transition: border-color 0.15s;
+        color: var(--tabler-text, #1e293b);
+        background: var(--tabler-input-bg, #fff);
+    }
+    .td-note-form textarea:focus { outline: none; border-color: var(--tabler-primary, #206bc4); }
+    .td-note-form textarea::placeholder { color: var(--tabler-text-light, #cdd1d6); }
+    .td-note-form button {
+        align-self: flex-end;
+        padding: 8px 18px;
+        background: #206bc4;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .td-note-form button:hover { background: #1a56a0; }
+
+    .td-note-list { padding: 0; }
+    .td-note-item {
+        display: flex;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--tabler-border, #f0f2f5);
+    }
+    .td-note-item:last-child { border-bottom: none; }
+    .td-note-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #e7f1ff;
+        color: #206bc4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    .td-note-body { flex: 1; min-width: 0; }
+    .td-note-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+    .td-note-author { font-size: 13px; font-weight: 600; color: var(--tabler-text, #1e293b); }
+    .td-note-time { font-size: 11.5px; color: var(--tabler-text-light, #94a3b8); }
+    .td-note-content {
+        font-size: 13.5px;
+        line-height: 1.5;
+        color: var(--tabler-text, #475569);
+        white-space: pre-line;
+        word-break: break-word;
+    }
+    .td-note-delete {
+        background: none;
+        border: none;
+        color: var(--tabler-text-light, #cdd1d6);
+        cursor: pointer;
+        font-size: 12px;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.15s;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    .td-note-delete:hover { color: var(--tabler-danger, #d63939); background: var(--tabler-badge-danger-bg, #fce8e8); }
+    .td-notes-empty {
+        padding: 30px 18px;
+        text-align: center;
+        color: var(--tabler-text-light, #cdd1d6);
+        font-size: 13px;
+    }
+    .td-notes-empty i { display: block; font-size: 24px; margin-bottom: 8px; opacity: 0.4; }
+</style>
+
+<div class="td-wrap">
+    <a href="{{ ea_url().setAction('index') }}" class="td-back">
+        <i class="fa fa-arrow-left"></i> Powrót do listy zadań
+    </a>
+
+    <div class="td-header">
+        <div class="td-header-left">
+            <h1>{{ task.title }}</h1>
+            <div class="td-badges">
+
+                {% if task.priority == 'wysoki' %}
+                    <span class="td-badge priority-high"><i class="fa fa-arrow-up"></i> Wysoki priorytet</span>
+                {% elseif task.priority == 'średni' %}
+                    <span class="td-badge priority-medium"><i class="fa fa-minus"></i> Średni priorytet</span>
+                {% else %}
+                    <span class="td-badge priority-low"><i class="fa fa-arrow-down"></i> Niski priorytet</span>
+                {% endif %}
+
+                {% if task.status == 'nowe' %}
+                    <span class="td-badge status-new"><i class="fa fa-circle-dot"></i> Nowe</span>
+                {% elseif task.status == 'w_trakcie' %}
+                    <span class="td-badge status-progress"><i class="fa fa-spinner"></i> W trakcie</span>
+                {% else %}
+                    <span class="td-badge status-done"><i class="fa fa-circle-check"></i> Zakończone</span>
+                {% endif %}
+
+                {% if task.dueDate and task.dueDate < date() and task.status != 'zakończone' %}
+                    <span class="td-badge overdue"><i class="fa fa-exclamation-triangle"></i> Po terminie!</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="td-actions">
+            <a href="{{ ea_url().setAction('edit').setEntityId(task.id) }}" class="btn-edit">
+                <i class="fa fa-pen"></i> Edytuj
+            </a>
+            {% if is_granted('ROLE_ADMIN') %}
+                <form id="del-task-detail" method="POST" action="{{ ea_url().setAction('delete').setEntityId(task.id) }}" style="display:inline;margin:0;">
+                    <input type="hidden" name="token" value="{{ csrf_token('ea-delete') }}">
+                    <button type="button" class="btn-del" style="cursor:pointer;"
+                            onclick="openDeleteModal('del-task-detail', '{{ task.title|e('js') }}')">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="td-status-bar">
+        <span class="sb-label"><i class="fa fa-arrow-right-arrow-left"></i> Zmień status:</span>
+        <div class="sb-btns">
+            <form method="post" action="{{ path('task_change_status', {id: task.id}) }}" style="display:inline;">
+                <input type="hidden" name="status" value="nowe">
+                <input type="hidden" name="_token" value="{{ csrf_token('task_status_' ~ task.id) }}">
+                <button type="submit" class="sb-btn btn-new {{ task.status == 'nowe' ? 'active' : '' }}">
+                    <i class="fa fa-circle-dot"></i> Nowe
+                </button>
+            </form>
+            <form method="post" action="{{ path('task_change_status', {id: task.id}) }}" style="display:inline;">
+                <input type="hidden" name="status" value="w_trakcie">
+                <input type="hidden" name="_token" value="{{ csrf_token('task_status_' ~ task.id) }}">
+                <button type="submit" class="sb-btn btn-progress {{ task.status == 'w_trakcie' ? 'active' : '' }}">
+                    <i class="fa fa-spinner"></i> W trakcie
+                </button>
+            </form>
+            <form method="post" action="{{ path('task_change_status', {id: task.id}) }}" style="display:inline;">
+                <input type="hidden" name="status" value="zakończone">
+                <input type="hidden" name="_token" value="{{ csrf_token('task_status_' ~ task.id) }}">
+                <button type="submit" class="sb-btn btn-done {{ task.status == 'zakończone' ? 'active' : '' }}">
+                    <i class="fa fa-circle-check"></i> Zakończone
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="td-grid">
+
+        <div>
+            <div class="td-card">
+                <div class="td-card-head"><i class="fa fa-align-left"></i> Opis zadania</div>
+                <div class="td-card-body">
+                    {% if task.description %}
+                        <div class="td-desc">{{ task.description }}</div>
+                    {% else %}
+                        <div class="td-desc empty">Brak opisu.</div>
+                    {% endif %}
+                </div>
+                <div class="td-timestamps">
+                    <span class="ts-item"><i class="fa fa-clock"></i> Utworzono: {{ task.createdAt|date('d.m.Y H:i') }}</span>
+                    <span class="ts-item"><i class="fa fa-rotate"></i> Aktualizacja: {{ task.updatedAt|date('d.m.Y H:i') }}</span>
+                </div>
+            </div>
+
+            <div class="td-card td-notes-card">
+                <div class="td-card-head"><i class="fa fa-sticky-note"></i> Notatki ({{ task.notes|length }})</div>
+                <form method="post" action="{{ path('task_add_note', {id: task.id}) }}" class="td-note-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('task_note_' ~ task.id) }}">
+                    <textarea name="content" placeholder="Dodaj notatkę... np. &quot;Dzwoniłem, nie odebrał&quot;, &quot;Wysłano ofertę&quot;, &quot;Klient prosi o kontakt jutro&quot;" rows="2"></textarea>
+                    <button type="submit"><i class="fa fa-plus"></i> Dodaj</button>
+                </form>
+                {% if task.notes|length > 0 %}
+                <div class="td-note-list">
+                    {% for note in task.notes %}
+                    <div class="td-note-item">
+                        <span class="td-note-avatar">
+                            {{ note.author.firstName|slice(0,1)|upper }}{{ note.author.lastName|slice(0,1)|upper }}
+                        </span>
+                        <div class="td-note-body">
+                            <div class="td-note-header">
+                                <span class="td-note-author">{{ note.author.firstName }} {{ note.author.lastName }}</span>
+                                <span class="td-note-time">{{ note.createdAt|date('d.m.Y H:i') }}</span>
+                            </div>
+                            <div class="td-note-content">{{ note.content }}</div>
+                        </div>
+                        <form method="post" action="{{ path('task_delete_note', {id: note.id}) }}" style="margin:0;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete_note_' ~ note.id) }}">
+                            <button type="submit" class="td-note-delete" title="Usuń notatkę"
+                                    onclick="return confirm('Usunąć tę notatkę?')">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="td-notes-empty">
+                    <i class="fa fa-comment-slash"></i>
+                    Brak notatek. Dodaj pierwszą notatkę powyżej.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div>
+            <div class="td-card" style="margin-bottom:16px;">
+                <div class="td-card-head"><i class="fa fa-info-circle"></i> Szczegóły</div>
+                <div class="td-card-body">
+                    <div class="td-info">
+
+                        <div class="td-info-row">
+                            {% if task.assignedTo %}
+                                <span class="td-assignee-avatar">{{ task.assignedTo.firstName|slice(0,1)|upper }}{{ task.assignedTo.lastName|slice(0,1)|upper }}</span>
+                            {% else %}
+                                <div class="td-info-icon gray"><i class="fa fa-user"></i></div>
+                            {% endif %}
+                            <div class="td-info-text">
+                                <div class="td-info-label">Przypisane do</div>
+                                <div class="td-info-value">
+                                    {% if task.assignedTo %}
+                                        {{ task.assignedTo.firstName }} {{ task.assignedTo.lastName }}
+                                    {% else %}
+                                        <span style="color:#cdd1d6;">Nieprzypisane</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="td-info-row">
+                            {% if task.createdBy %}
+                                <span class="td-assignee-avatar">{{ task.createdBy.firstName|slice(0,1)|upper }}{{ task.createdBy.lastName|slice(0,1)|upper }}</span>
+                            {% else %}
+                                <div class="td-info-icon gray"><i class="fa fa-user-plus"></i></div>
+                            {% endif %}
+                            <div class="td-info-text">
+                                <div class="td-info-label">Dodane przez</div>
+                                <div class="td-info-value">
+                                    {% if task.createdBy %}
+                                        {{ task.createdBy.firstName }} {{ task.createdBy.lastName }}
+                                    {% else %}
+                                        <span style="color:#cdd1d6;">(brak danych)</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="td-info-row">
+                            {% set isOverdue = task.dueDate and task.dueDate < date() and task.status != 'zakończone' %}
+                            <div class="td-info-icon {{ isOverdue ? 'red' : 'orange' }}">
+                                <i class="fa fa-calendar"></i>
+                            </div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">Termin</div>
+                                <div class="td-info-value" style="{{ isOverdue ? 'color:#d63939;' : '' }}">
+                                    {% if task.dueDate %}
+                                        {{ task.dueDate|date('d.m.Y') }}
+                                        {% if isOverdue %} — po terminie!{% endif %}
+                                    {% else %}
+                                        <span style="color:#cdd1d6;">Brak terminu</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="td-info-row">
+                            <div class="td-info-icon {{ task.priority == 'wysoki' ? 'red' : (task.priority == 'średni' ? 'orange' : 'green') }}">
+                                <i class="fa fa-flag"></i>
+                            </div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">Priorytet</div>
+                                <div class="td-info-value">{{ task.priorityLabel }}</div>
+                            </div>
+                        </div>
+
+                        <div class="td-info-row">
+                            <div class="td-info-icon {{ task.status == 'nowe' ? 'blue' : (task.status == 'w_trakcie' ? 'orange' : 'green') }}">
+                                <i class="fa fa-circle-dot"></i>
+                            </div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">Status</div>
+                                <div class="td-info-value">{{ task.statusLabel }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if task.client %}
+            {% set c = task.client %}
+            <div class="td-card">
+                <div class="td-card-head"><i class="fa fa-building"></i> Powiązany klient</div>
+                <div class="td-card-body">
+                    <div class="td-info">
+
+                        <div class="td-info-row">
+                            <div class="td-info-icon blue"><i class="fa fa-building"></i></div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">Firma</div>
+                                <div class="td-info-value">
+                                    <a href="{{ ea_url()
+                                        .setController('App\\Controller\\Admin\\ClientCrudController')
+                                        .setAction('detail')
+                                        .setEntityId(c.id) }}" class="td-client-link">
+                                        {{ c.companyName }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if c.phone %}
+                        <div class="td-info-row">
+                            <div class="td-info-icon green"><i class="fa fa-phone"></i></div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">Telefon</div>
+                                <div class="td-info-value">{{ c.phone }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if c.email %}
+                        <div class="td-info-row">
+                            <div class="td-info-icon blue"><i class="fa fa-envelope"></i></div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">E-mail</div>
+                                <div class="td-info-value">{{ c.email }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if c.fullAddress %}
+                        <div class="td-info-row">
+                            <div class="td-info-icon gray"><i class="fa fa-location-dot"></i></div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">Adres</div>
+                                <div class="td-info-value">{{ c.fullAddress }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if c.contactMethods is not empty %}
+                        <div class="td-info-row">
+                            {% set isNone = c.isDoNotContact %}
+                            <div class="td-info-icon {{ isNone ? 'red' : 'orange' }}"><i class="fa fa-paper-plane"></i></div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">Forma kontaktu</div>
+                                <div class="td-info-value" {% if isNone %}style="color:#d63939;font-weight:700;"{% endif %}>
+                                    {% if isNone %}🚫 Nie kontaktować się
+                                    {% else %}
+                                        {% for m in c.contactMethods %}{{ m.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if c.industries|length > 0 %}
+                        <div class="td-info-row">
+                            <div class="td-info-icon blue"><i class="fa fa-briefcase"></i></div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">Branża</div>
+                                <div class="td-info-value">{{ c.industriesString }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if c.assortments|length > 0 %}
+                        <div class="td-info-row">
+                            <div class="td-info-icon green"><i class="fa fa-boxes-stacked"></i></div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">Asortyment</div>
+                                <div class="td-info-value">{{ c.assortmentsString }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if c.sources is defined and c.sources|length > 0 %}
+                        <div class="td-info-row">
+                            <div class="td-info-icon orange"><i class="fa fa-bullhorn"></i></div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">Źródła</div>
+                                <div class="td-info-value">{{ c.sourcesString }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if c.turnover is not null %}
+                        <div class="td-info-row">
+                            <div class="td-info-icon green"><i class="fa fa-chart-line"></i></div>
+                            <div class="td-info-text">
+                                <div class="td-info-label">Obroty</div>
+                                <div class="td-info-value" style="font-weight:700;">{{ c.turnover|number_format(2, ',', ' ') }} PLN</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div id="delete-modal" data-controller="delete-modal" data-delete-modal-target="modal" data-action="click->delete-modal#backdrop" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:36px 32px 28px;max-width:400px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,0.22);text-align:center;">
+        <div style="width:60px;height:60px;background:#fce8e8;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+            <i class="fa fa-trash" style="color:#d63939;font-size:24px;"></i>
+        </div>
+        <h3 style="font-size:18px;font-weight:700;color:#1e293b;margin:0 0 10px;">Potwierdź usunięcie</h3>
+        <p id="delete-modal-text" data-delete-modal-target="text" style="font-size:14px;color:#626976;margin:0 0 24px;line-height:1.5;"></p>
+        <div style="display:flex;gap:10px;">
+            <button type="button" data-action="delete-modal#close" onclick="closeDeleteModal()" style="flex:1;padding:11px;border-radius:8px;border:1px solid #e6e7e9;background:#fff;color:#626976;font-size:14px;font-weight:500;cursor:pointer;">Anuluj</button>
+            <button type="button" data-action="delete-modal#confirm" id="delete-modal-confirm" style="flex:1;padding:11px;border-radius:8px;border:none;background:#d63939;color:#fff;font-size:14px;font-weight:700;cursor:pointer;"><i class="fa fa-trash"></i> Tak, usuń</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+

@@ -1,0 +1,407 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}{% endblock %}
+
+{% block page_content %}
+<style>
+    .dashboard-welcome {
+        margin-bottom: 28px;
+    }
+    .dashboard-welcome h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--tabler-text, #1e293b);
+        margin: 0 0 4px 0;
+        letter-spacing: -0.5px;
+    }
+    .dashboard-welcome p {
+        color: var(--tabler-text-muted, #626976);
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+    @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr; } }
+
+    .stat-card {
+        background: var(--tabler-card-bg, #fff);
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        transition: box-shadow 0.15s ease, transform 0.15s ease;
+    }
+    .stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        transform: translateY(-2px);
+    }
+    .stat-card .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .stat-icon.blue { background: #e7f1ff; color: #206bc4; }
+    .stat-icon.green { background: #e6f7ed; color: #2fb344; }
+    .stat-icon.orange { background: #fff3e0; color: #f76707; }
+    .stat-icon.red { background: #fce8e8; color: #d63939; }
+    .stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+
+    .stat-card .stat-content { flex: 1; min-width: 0; }
+    .stat-card .stat-value {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--tabler-text, #1e293b);
+        line-height: 1.2;
+        letter-spacing: -0.5px;
+    }
+    .stat-card .stat-label {
+        font-size: 13px;
+        color: var(--tabler-text-muted, #626976);
+        margin-top: 2px;
+    }
+    .stat-card .stat-sub {
+        font-size: 12px;
+        color: var(--tabler-text-light, #94a3b8);
+        margin-top: 4px;
+    }
+
+    /* Content grid */
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 28px;
+    }
+    @media (max-width: 992px) { .content-grid { grid-template-columns: 1fr; } }
+
+    .content-card {
+        background: var(--tabler-card-bg, #fff);
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .content-card .card-head {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--tabler-border, #e6e7e9);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .content-card .card-head h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--tabler-text, #1e293b);
+        margin: 0;
+    }
+    .content-card .card-head a {
+        font-size: 13px;
+        color: var(--tabler-primary, #206bc4);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .content-card .card-head a:hover { text-decoration: underline; }
+
+    /* Task list */
+    .task-list { list-style: none; padding: 0; margin: 0; }
+    .task-list li {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--tabler-border, #f0f2f5);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: background 0.1s ease;
+    }
+    .task-list li:last-child { border-bottom: none; }
+    .task-list li:hover { background: var(--tabler-row-hover, #f8fafc); }
+    .task-list li a.task-link, .client-list li a.client-link {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex: 1;
+        min-width: 0;
+        text-decoration: none;
+        color: inherit;
+    }
+    .task-list li { cursor: pointer; }
+    .client-list li { cursor: pointer; }
+
+    .task-priority {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .task-priority.high { background: var(--tabler-danger, #d63939); }
+    .task-priority.medium { background: var(--tabler-warning, #f76707); }
+    .task-priority.low { background: var(--tabler-success, #2fb344); }
+
+    .task-info { flex: 1; min-width: 0; }
+    .task-info .task-title {
+        font-size: 13.5px;
+        font-weight: 500;
+        color: var(--tabler-text, #1e293b);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .task-info .task-meta {
+        font-size: 12px;
+        color: var(--tabler-text-light, #94a3b8);
+        margin-top: 2px;
+        display: flex;
+        gap: 12px;
+    }
+    .task-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 6px;
+        flex-shrink: 0;
+    }
+    .task-badge.new { background: var(--tabler-badge-info-bg, #e7f1ff); color: var(--tabler-badge-info-text, #206bc4); }
+    .task-badge.in-progress { background: var(--tabler-badge-warning-bg, #fff3e0); color: var(--tabler-badge-warning-text, #f76707); }
+
+    /* Client list */
+    .client-list { list-style: none; padding: 0; margin: 0; }
+    .client-list li {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--tabler-border, #f0f2f5);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: background 0.1s ease;
+    }
+    .client-list li:last-child { border-bottom: none; }
+    .client-list li:hover { background: var(--tabler-row-hover, #f8fafc); }
+
+    .client-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: var(--tabler-badge-info-bg, #e7f1ff);
+        color: var(--tabler-primary, #206bc4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+    .client-info { flex: 1; min-width: 0; }
+    .client-info .client-name {
+        font-size: 13.5px;
+        font-weight: 500;
+        color: var(--tabler-text, #1e293b);
+    }
+    .client-info .client-detail {
+        font-size: 12px;
+        color: var(--tabler-text-light, #94a3b8);
+        margin-top: 1px;
+    }
+    .client-industry {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 6px;
+        background: var(--tabler-badge-secondary-bg, #f1f5f9);
+        color: var(--tabler-text-muted, #626976);
+        flex-shrink: 0;
+    }
+
+    /* Quick actions */
+    .quick-actions {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 28px;
+    }
+    .quick-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 13.5px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.15s ease;
+        border: 1px solid transparent;
+    }
+    .quick-action-btn.primary {
+        background: #206bc4;
+        color: #fff;
+        box-shadow: 0 1px 2px rgba(32,107,196,0.2);
+    }
+    .quick-action-btn.primary:hover {
+        background: #1a56a0;
+        box-shadow: 0 2px 4px rgba(32,107,196,0.3);
+        transform: translateY(-1px);
+    }
+    .quick-action-btn.secondary {
+        background: var(--tabler-card-bg, #fff);
+        color: var(--tabler-text-muted, #626976);
+        border-color: var(--tabler-border, #e6e7e9);
+    }
+    .quick-action-btn.secondary:hover {
+        background: var(--tabler-row-hover, #f8fafc);
+        color: var(--tabler-text, #1e293b);
+        border-color: var(--tabler-border, #cdd1d6);
+    }
+
+    .empty-state {
+        padding: 32px 20px;
+        text-align: center;
+        color: var(--tabler-text-light, #94a3b8);
+        font-size: 13.5px;
+    }
+    .empty-state i {
+        font-size: 28px;
+        margin-bottom: 8px;
+        display: block;
+        opacity: 0.5;
+    }
+</style>
+
+<div class="dashboard-welcome">
+    <h1>Witaj{% if user.firstName is defined and user.firstName %}, {{ user.firstName }}{% endif %}!</h1>
+    <p>Masz <strong>{{ myTasksNew + myTasksInProgress }}</strong> aktywnych zadań{% if highPriorityTasks > 0 %}, w tym <strong style="color:#d63939;">{{ highPriorityTasks }}</strong> o wysokim priorytecie{% endif %}.</p>
+</div>
+
+<div class="quick-actions">
+    {% if is_granted('ROLE_USER') %}
+    <a href="{{ newClientUrl }}" class="quick-action-btn primary">
+        <i class="fa fa-plus"></i> Dodaj klienta
+    </a>
+    {% endif %}
+    <a href="{{ newTaskUrl }}" class="quick-action-btn secondary">
+        <i class="fa fa-plus"></i> Nowe zadanie
+    </a>
+    <a href="{{ clientsUrl }}" class="quick-action-btn secondary">
+        <i class="fa fa-building"></i> Lista klientów
+    </a>
+    <a href="{{ tasksUrl }}" class="quick-action-btn secondary">
+        <i class="fa fa-tasks"></i> Wszystkie zadania
+    </a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa fa-building"></i></div>
+        <div class="stat-content">
+            <div class="stat-value">{{ totalClients }}</div>
+            <div class="stat-label">Klienci w bazie</div>
+            <div class="stat-sub">{{ clientsWithAccount }} z kontem biznesowym</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fa fa-cart-shopping"></i></div>
+        <div class="stat-content">
+            <div class="stat-value">{{ clientsPurchased }}</div>
+            <div class="stat-label">Klienci, którzy kupili</div>
+            <div class="stat-sub">{% if totalClients > 0 %}{{ ((clientsPurchased / totalClients) * 100)|number_format(0) }}% konwersji{% else %}Brak danych{% endif %}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa fa-list-check"></i></div>
+        <div class="stat-content">
+            <div class="stat-value">{{ myTasksNew + myTasksInProgress }}</div>
+            <div class="stat-label">Twoje aktywne zadania</div>
+            <div class="stat-sub">{{ myTasksNew }} nowych, {{ myTasksInProgress }} w trakcie</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red"><i class="fa fa-fire"></i></div>
+        <div class="stat-content">
+            <div class="stat-value">{{ highPriorityTasks }}</div>
+            <div class="stat-label">Pilne zadania</div>
+            <div class="stat-sub">Wysoki priorytet, do realizacji</div>
+        </div>
+    </div>
+</div>
+
+<div class="content-grid">
+
+    <div class="content-card">
+        <div class="card-head">
+            <h3><i class="fa fa-tasks" style="margin-right:8px;opacity:0.6;"></i> Twoje zadania</h3>
+            <a href="{{ tasksUrl }}">Pokaż wszystkie &rarr;</a>
+        </div>
+        {% if recentTasks|length > 0 %}
+            <ul class="task-list">
+                {% for task in recentTasks %}
+                <li onclick="window.location='{{ taskDetailUrls[task.id] }}'">
+                    <a href="{{ taskDetailUrls[task.id] }}" class="task-link">
+                        <span class="task-priority {{ task.priority == 'wysoki' ? 'high' : (task.priority == 'średni' ? 'medium' : 'low') }}"></span>
+                        <div class="task-info">
+                            <div class="task-title">{{ task.title }}</div>
+                            <div class="task-meta">
+                                {% if task.client %}<span><i class="fa fa-building"></i> {{ task.client.companyName }}</span>{% endif %}
+                                {% if task.dueDate %}<span><i class="fa fa-calendar"></i> {{ task.dueDate|date('d.m.Y') }}</span>{% endif %}
+                            </div>
+                        </div>
+                        <span class="task-badge {{ task.status == 'nowe' ? 'new' : 'in-progress' }}">
+                            {{ task.status == 'nowe' ? 'Nowe' : 'W trakcie' }}
+                        </span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="empty-state">
+                <i class="fa fa-check-circle"></i>
+                Brak aktywnych zadań. Wszystko zrobione!
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="content-card">
+        <div class="card-head">
+            <h3><i class="fa fa-building" style="margin-right:8px;opacity:0.6;"></i> Ostatnio dodani klienci</h3>
+            <a href="{{ clientsUrl }}">Pokaż wszystkich &rarr;</a>
+        </div>
+        {% if recentClients|length > 0 %}
+            <ul class="client-list">
+                {% for client in recentClients %}
+                <li onclick="window.location='{{ clientDetailUrls[client.id] }}'">
+                    <a href="{{ clientDetailUrls[client.id] }}" class="client-link">
+                        <div class="client-avatar">
+                            {{ client.companyName|slice(0, 2)|upper }}
+                        </div>
+                        <div class="client-info">
+                            <div class="client-name">{{ client.companyName }}</div>
+                            <div class="client-detail">
+                                NIP: {{ client.nip }}
+                                {% if client.phone %} &middot; {{ client.phone }}{% endif %}
+                                {% if client.email %} &middot; {{ client.email }}{% endif %}
+                            </div>
+                        </div>
+                        {% if client.industries|length > 0 %}
+                            <span class="client-industry">{{ client.industriesString }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="empty-state">
+                <i class="fa fa-users"></i>
+                Brak klientów w bazie. Dodaj pierwszego!
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

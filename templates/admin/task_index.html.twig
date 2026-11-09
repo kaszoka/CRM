@@ -1,0 +1,642 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}{% endblock %}
+
+{% block page_content %}
+{% set applied_filters = app.request.query.all['filters']|default([])|keys %}
+{% set has_filters = filters is defined and filters|length > 0 %}
+<style>
+    .tasks-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    .tasks-header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+    .tasks-header .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .tasks-header .hdr-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13.5px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+    .hdr-btn.primary { background: #206bc4; color: #fff; }
+    .hdr-btn.primary:hover { background: #1a56a0; }
+    .hdr-btn.toggle {
+        background: #fff;
+        border-color: #e6e7e9;
+        color: #626976;
+        user-select: none;
+    }
+    .hdr-btn.toggle:hover { background: #f8fafc; color: #1e293b; }
+    .hdr-btn.toggle.active { background: #e7f1ff; border-color: #c5d4e8; color: #206bc4; }
+    .hdr-btn.toggle input {
+        width: 15px;
+        height: 15px;
+        pointer-events: none;
+        accent-color: #206bc4;
+    }
+
+    /* Columns layout */
+    .tasks-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+    }
+    @media (max-width: 1100px) { .tasks-columns { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 700px) { .tasks-columns { grid-template-columns: 1fr; } }
+
+    /* ─── Mobile ≤640px ──────────────────────────────── */
+    @media (max-width: 640px) {
+        .tasks-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+        .tasks-header h1 { font-size: 20px; }
+        .tasks-header .header-right {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .tasks-header .hdr-btn {
+            flex: 1;
+            justify-content: center;
+            font-size: 12.5px;
+            padding: 7px 10px;
+        }
+    }
+
+    .task-column {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .task-column-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .task-column-head .col-count {
+        background: rgba(0,0,0,0.08);
+        padding: 1px 8px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .col-new { background: #e7f1ff; color: #206bc4; }
+    .col-progress { background: #fff3e0; color: #f76707; }
+    .col-done { background: #e6f7ed; color: #2fb344; }
+
+    /* Task card */
+    .task-card {
+        background: #fff;
+        border: 1px solid #e6e7e9;
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        position: relative;
+    }
+    .task-card:hover {
+        border-color: #c5d4e8;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transform: translateY(-1px);
+    }
+
+    .task-card .tc-priority {
+        position: absolute;
+        top: 0;
+        left: 16px;
+        width: 32px;
+        height: 3px;
+        border-radius: 0 0 3px 3px;
+    }
+    .tc-priority.high { background: #d63939; }
+    .tc-priority.medium { background: #f76707; }
+    .tc-priority.low { background: #2fb344; }
+
+    .task-card .tc-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        margin-top: 2px;
+    }
+    .task-card .tc-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+        line-height: 1.35;
+        flex: 1;
+        margin-right: 8px;
+    }
+    .task-card .tc-priority-badge {
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 5px;
+        flex-shrink: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .tc-priority-badge.high { background: #fce8e8; color: #d63939; }
+    .tc-priority-badge.medium { background: #fff3e0; color: #f76707; }
+    .tc-priority-badge.low { background: #e6f7ed; color: #2fb344; }
+
+    .task-card .tc-desc {
+        font-size: 12.5px;
+        color: #626976;
+        margin-bottom: 12px;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .task-card .tc-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 12px;
+        color: #94a3b8;
+    }
+    .task-card .tc-meta .tm-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .task-card .tc-meta .tm-item i { font-size: 11px; }
+    .task-card .tc-meta .tm-item.overdue { color: #d63939; font-weight: 600; }
+
+    .task-card .tc-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid #f0f2f5;
+    }
+    .task-card .tc-assignee {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12.5px;
+        color: #626976;
+    }
+    .tc-assignee .assignee-avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #e7f1ff;
+        color: #206bc4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 700;
+    }
+    .task-card .tc-actions {
+        display: flex;
+        gap: 4px;
+    }
+    .task-card .tc-actions a {
+        width: 28px;
+        height: 28px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 12px;
+        transition: all 0.15s ease;
+        color: #94a3b8;
+    }
+    .task-card .tc-actions a:hover { background: #f1f5f9; color: #626976; }
+
+    .empty-tasks {
+        text-align: center;
+        padding: 60px 20px;
+        color: #94a3b8;
+        grid-column: 1 / -1;
+    }
+    .empty-tasks i { font-size: 40px; margin-bottom: 12px; display: block; opacity: 0.4; }
+    .empty-tasks p { font-size: 15px; margin: 0 0 16px; }
+
+    .pagination-wrapper {
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Filter button */
+    .filter-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        background: #fff;
+        color: #626976;
+        border: 1px solid #e6e7e9;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+    }
+    .filter-btn:hover { background: #f8fafc; color: #1e293b; border-color: #cdd1d6; }
+    .filter-btn.has-filters { background: #e7f1ff; border-color: #c5d4e8; color: #206bc4; }
+    .filter-btn .filter-count {
+        background: #206bc4;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 10px;
+    }
+    .filter-reset-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: #fff;
+        border: 1px solid #e6e7e9;
+        color: #d63939;
+        text-decoration: none;
+        font-size: 13px;
+        transition: all 0.15s;
+    }
+    .filter-reset-btn:hover { background: #fce8e8; border-color: #f5c2c2; }
+    .active-filters-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+        align-items: center;
+    }
+    .active-filters-bar .af-label {
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+    .active-filters-bar .af-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #e7f1ff;
+        color: #206bc4;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 3px 10px;
+        border-radius: 6px;
+    }
+</style>
+
+{% set tasks = entities %}
+{% set myTasksParam = app.request.query.get('myTasks', '1') %}
+{% set poolParam = app.request.query.get('pool', '0') %}
+
+{% set newTasks = [] %}
+{% set inProgressTasks = [] %}
+{% set completedTasks = [] %}
+{% for entity in tasks %}
+    {% set task = entity.instance %}
+    {% if task.status == 'nowe' %}
+        {% set newTasks = newTasks|merge([{entity: entity, task: task}]) %}
+    {% elseif task.status == 'w_trakcie' %}
+        {% set inProgressTasks = inProgressTasks|merge([{entity: entity, task: task}]) %}
+    {% else %}
+        {% set completedTasks = completedTasks|merge([{entity: entity, task: task}]) %}
+    {% endif %}
+{% endfor %}
+
+<div class="tasks-header">
+    <h1>Zadania</h1>
+    <div class="header-right">
+        {% if has_filters %}
+            <div class="datagrid-filters" style="display:inline-flex;align-items:center;gap:6px;">
+                <a href="#" data-href="{{ ea_url().setAction('renderFilters') }}" class="filter-btn action-filters-button disabled {{ applied_filters ? 'has-filters' : '' }}" data-bs-toggle="modal" data-bs-target="#modal-filters">
+                    <i class="fa fa-filter"></i> Filtry
+                    {% if applied_filters %}<span class="filter-count">{{ applied_filters|length }}</span>{% endif %}
+                </a>
+                {% if applied_filters %}
+                    <a href="{{ ea_url().unset('filters').setAction('index') }}" class="filter-reset-btn" title="Wyczyść filtry">
+                        <i class="fa fa-times"></i>
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+        {% set toggleUrl = ea_url().set('myTasks', myTasksParam == '1' ? '0' : '1') %}
+        <a href="{{ toggleUrl }}" class="hdr-btn toggle {{ myTasksParam == '1' ? 'active' : '' }}">
+            <input type="checkbox" {{ myTasksParam == '1' ? 'checked' : '' }}>
+            Przypisane do mnie
+        </a>
+        {% set poolToggleUrl = ea_url().set('pool', poolParam == '1' ? '0' : '1') %}
+        <a href="{{ poolToggleUrl }}" class="hdr-btn toggle {{ poolParam == '1' ? 'active' : '' }}">
+            <input type="checkbox" {{ poolParam == '1' ? 'checked' : '' }}>
+            Pula zadań
+        </a>
+        <a href="{{ ea_url().setAction('new') }}" class="hdr-btn primary">
+            <i class="fa fa-plus"></i> Dodaj Zadanie
+        </a>
+    </div>
+</div>
+
+{% if applied_filters|length > 0 %}
+{% set filterLabels = {
+    'priority': 'Priorytet',
+    'status': 'Status',
+    'assignedTo': 'Przypisano do',
+    'client': 'Klient',
+    'dueDate': 'Termin'
+} %}
+<div class="active-filters-bar">
+    <span class="af-label"><i class="fa fa-filter"></i> Aktywne filtry:</span>
+    {% for filterName in applied_filters %}
+        <span class="af-tag">{{ filterLabels[filterName] ?? filterName }}</span>
+    {% endfor %}
+    <a href="{{ ea_url().unset('filters').setAction('index') }}" style="font-size:12px;color:#d63939;text-decoration:none;font-weight:500;">Wyczyść wszystkie</a>
+</div>
+{% endif %}
+
+{% if tasks|length > 0 %}
+<div class="tasks-columns">
+
+    <div class="task-column">
+        <div class="task-column-head col-new">
+            <i class="fa fa-circle-dot"></i> Nowe
+            <span class="col-count">{{ newTasks|length }}</span>
+        </div>
+        {% for item in newTasks %}
+            {% set task = item.task %}
+            {% set detailUrl = ea_url().setAction('detail').setEntityId(task.id) %}
+            {% set editUrl = ea_url().setAction('edit').setEntityId(task.id) %}
+            <div class="task-card" onclick="window.location='{{ detailUrl }}'">
+                <div class="tc-priority {{ task.priority == 'wysoki' ? 'high' : (task.priority == 'średni' ? 'medium' : 'low') }}"></div>
+                <div class="tc-top">
+                    <div class="tc-title">{{ task.title }}</div>
+                    <span class="tc-priority-badge {{ task.priority == 'wysoki' ? 'high' : (task.priority == 'średni' ? 'medium' : 'low') }}">
+                        {{ task.priority == 'wysoki' ? 'Pilne' : (task.priority == 'średni' ? 'Średni' : 'Niski') }}
+                    </span>
+                </div>
+                {% if task.description %}
+                    <div class="tc-desc">{{ task.description }}</div>
+                {% endif %}
+                <div class="tc-meta">
+                    {% if task.client %}
+                        <span class="tm-item"><i class="fa fa-building"></i> {{ task.client.companyName }}</span>
+                    {% endif %}
+                    {% if task.dueDate %}
+                        {% set isOverdue = task.dueDate < date() %}
+                        <span class="tm-item {{ isOverdue ? 'overdue' : '' }}">
+                            <i class="fa fa-calendar"></i>
+                            {{ task.dueDate|date('d.m.Y') }}
+                            {% if isOverdue %} (po terminie!){% endif %}
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="tc-footer">
+                    <div class="tc-assignee">
+                        {% if task.assignedTo %}
+                            <span class="assignee-avatar">{{ task.assignedTo.firstName|slice(0,1)|upper }}{{ task.assignedTo.lastName|slice(0,1)|upper }}</span>
+                            {{ task.assignedTo.firstName }} {{ task.assignedTo.lastName }}
+                        {% else %}
+                            <span style="color:#cdd1d6;">Nieprzypisane</span>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:0;">
+                        {% if task.createdBy %}
+                            <div style="font-size:11.5px;color:#94a3b8;white-space:nowrap;">
+                                <i class="fa fa-user-plus"></i>
+                                {{ task.createdBy.firstName }} {{ task.createdBy.lastName }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="tc-actions" onclick="event.stopPropagation()">
+                        <a href="{{ editUrl }}" title="Edytuj"><i class="fa fa-pen"></i></a>
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <form id="del-task-{{ task.id }}" method="POST" action="{{ ea_url().setAction('delete').setEntityId(task.id) }}" style="display:inline;margin:0;">
+                                <input type="hidden" name="token" value="{{ csrf_token('ea-delete') }}">
+                                <button type="button" title="Usuń zadanie" style="width:28px;height:28px;border-radius:5px;border:none;background:none;color:#d63939;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;"
+                                        onclick="openDeleteModal('del-task-{{ task.id }}', '{{ task.title|e('js') }}')">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="task-column">
+        <div class="task-column-head col-progress">
+            <i class="fa fa-spinner"></i> W trakcie
+            <span class="col-count">{{ inProgressTasks|length }}</span>
+        </div>
+        {% for item in inProgressTasks %}
+            {% set task = item.task %}
+            {% set detailUrl = ea_url().setAction('detail').setEntityId(task.id) %}
+            {% set editUrl = ea_url().setAction('edit').setEntityId(task.id) %}
+            <div class="task-card" onclick="window.location='{{ detailUrl }}'">
+                <div class="tc-priority {{ task.priority == 'wysoki' ? 'high' : (task.priority == 'średni' ? 'medium' : 'low') }}"></div>
+                <div class="tc-top">
+                    <div class="tc-title">{{ task.title }}</div>
+                    <span class="tc-priority-badge {{ task.priority == 'wysoki' ? 'high' : (task.priority == 'średni' ? 'medium' : 'low') }}">
+                        {{ task.priority == 'wysoki' ? 'Pilne' : (task.priority == 'średni' ? 'Średni' : 'Niski') }}
+                    </span>
+                </div>
+                {% if task.description %}
+                    <div class="tc-desc">{{ task.description }}</div>
+                {% endif %}
+                <div class="tc-meta">
+                    {% if task.client %}
+                        <span class="tm-item"><i class="fa fa-building"></i> {{ task.client.companyName }}</span>
+                    {% endif %}
+                    {% if task.dueDate %}
+                        {% set isOverdue = task.dueDate < date() %}
+                        <span class="tm-item {{ isOverdue ? 'overdue' : '' }}">
+                            <i class="fa fa-calendar"></i>
+                            {{ task.dueDate|date('d.m.Y') }}
+                            {% if isOverdue %} (po terminie!){% endif %}
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="tc-footer">
+                    <div class="tc-assignee">
+                        {% if task.assignedTo %}
+                            <span class="assignee-avatar">{{ task.assignedTo.firstName|slice(0,1)|upper }}{{ task.assignedTo.lastName|slice(0,1)|upper }}</span>
+                            {{ task.assignedTo.firstName }} {{ task.assignedTo.lastName }}
+                        {% else %}
+                            <span style="color:#cdd1d6;">Nieprzypisane</span>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:0;">
+                        {% if task.createdBy %}
+                            <div style="font-size:11.5px;color:#94a3b8;white-space:nowrap;">
+                                <i class="fa fa-user-plus"></i>
+                                {{ task.createdBy.firstName }} {{ task.createdBy.lastName }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="tc-actions" onclick="event.stopPropagation()">
+                        <a href="{{ editUrl }}" title="Edytuj"><i class="fa fa-pen"></i></a>
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <form id="del-task-{{ task.id }}" method="POST" action="{{ ea_url().setAction('delete').setEntityId(task.id) }}" style="display:inline;margin:0;">
+                                <input type="hidden" name="token" value="{{ csrf_token('ea-delete') }}">
+                                <button type="button" title="Usuń zadanie" style="width:28px;height:28px;border-radius:5px;border:none;background:none;color:#d63939;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;"
+                                        onclick="openDeleteModal('del-task-{{ task.id }}', '{{ task.title|e('js') }}')">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="task-column">
+        <div class="task-column-head col-done">
+            <i class="fa fa-circle-check"></i> Zakończone
+            <span class="col-count">{{ completedTasks|length }}</span>
+        </div>
+        {% for item in completedTasks %}
+            {% set task = item.task %}
+            {% set detailUrl = ea_url().setAction('detail').setEntityId(task.id) %}
+            {% set editUrl = ea_url().setAction('edit').setEntityId(task.id) %}
+            <div class="task-card" onclick="window.location='{{ detailUrl }}'" style="opacity:0.7;">
+                <div class="tc-priority low"></div>
+                <div class="tc-top">
+                    <div class="tc-title" style="text-decoration:line-through;color:#94a3b8;">{{ task.title }}</div>
+                </div>
+                <div class="tc-meta">
+                    {% if task.client %}
+                        <span class="tm-item"><i class="fa fa-building"></i> {{ task.client.companyName }}</span>
+                    {% endif %}
+                    {% if task.dueDate %}
+                        <span class="tm-item"><i class="fa fa-calendar"></i> {{ task.dueDate|date('d.m.Y') }}</span>
+                    {% endif %}
+                </div>
+                <div class="tc-footer">
+                    <div class="tc-assignee">
+                        {% if task.assignedTo %}
+                            <span class="assignee-avatar">{{ task.assignedTo.firstName|slice(0,1)|upper }}{{ task.assignedTo.lastName|slice(0,1)|upper }}</span>
+                            {{ task.assignedTo.firstName }} {{ task.assignedTo.lastName }}
+                        {% else %}
+                            <span style="color:#cdd1d6;">Nieprzypisane</span>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:0;">
+                        {% if task.createdBy %}
+                            <div style="font-size:11.5px;color:#94a3b8;white-space:nowrap;">
+                                <i class="fa fa-user-plus"></i>
+                                {{ task.createdBy.firstName }} {{ task.createdBy.lastName }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="tc-actions" onclick="event.stopPropagation()">
+                        <a href="{{ editUrl }}" title="Edytuj"><i class="fa fa-pen"></i></a>
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <form id="del-task-{{ task.id }}" method="POST" action="{{ ea_url().setAction('delete').setEntityId(task.id) }}" style="display:inline;margin:0;">
+                                <input type="hidden" name="token" value="{{ csrf_token('ea-delete') }}">
+                                <button type="button" title="Usuń zadanie" style="width:28px;height:28px;border-radius:5px;border:none;background:none;color:#d63939;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;"
+                                        onclick="openDeleteModal('del-task-{{ task.id }}', '{{ task.title|e('js') }}')">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if paginator is defined and paginator.numResults > 0 %}
+<div class="pagination-wrapper">
+    <div style="font-size:13px;color:#626976;">
+        {{ paginator.numResults }} zadani{{ paginator.numResults == 1 ? 'e' : 'a' }} &middot; strona {{ paginator.currentPage }} z {{ paginator.lastPage }}
+    </div>
+    {% if paginator.lastPage > 1 %}
+    <nav>
+        <ul class="pagination" style="margin:0;">
+            {% if paginator.hasPreviousPage %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ ea_url().set('page', paginator.previousPage) }}"><i class="fa fa-chevron-left"></i></a>
+                </li>
+            {% endif %}
+            {% for i in 1..paginator.lastPage %}
+                <li class="page-item {{ i == paginator.currentPage ? 'active' : '' }}">
+                    <a class="page-link" href="{{ ea_url().set('page', i) }}">{{ i }}</a>
+                </li>
+            {% endfor %}
+            {% if paginator.hasNextPage %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ ea_url().set('page', paginator.nextPage) }}"><i class="fa fa-chevron-right"></i></a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="tasks-columns">
+    <div class="empty-tasks">
+        <i class="fa fa-check-circle"></i>
+        <p>Brak zadań do wyświetlenia.</p>
+        <a href="{{ ea_url().setAction('new') }}" style="display:inline-flex;align-items:center;gap:6px;background:#206bc4;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-size:13.5px;font-weight:500;">
+            <i class="fa fa-plus"></i> Dodaj zadanie
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% if has_filters %}
+    {{ include('@EasyAdmin/crud/includes/_filters_modal.html.twig') }}
+{% endif %}
+
+<div id="delete-modal" data-controller="delete-modal" data-delete-modal-target="modal" data-action="click->delete-modal#backdrop" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:36px 32px 28px;max-width:400px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,0.22);text-align:center;">
+        <div style="width:60px;height:60px;background:#fce8e8;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+            <i class="fa fa-trash" style="color:#d63939;font-size:24px;"></i>
+        </div>
+        <h3 style="font-size:18px;font-weight:700;color:#1e293b;margin:0 0 10px;">Potwierdź usunięcie</h3>
+        <p id="delete-modal-text" data-delete-modal-target="text" style="font-size:14px;color:#626976;margin:0 0 24px;line-height:1.5;"></p>
+        <div style="display:flex;gap:10px;">
+            <button type="button" data-action="delete-modal#close" onclick="closeDeleteModal()" style="flex:1;padding:11px;border-radius:8px;border:1px solid #e6e7e9;background:#fff;color:#626976;font-size:14px;font-weight:500;cursor:pointer;">Anuluj</button>
+            <button type="button" data-action="delete-modal#confirm" id="delete-modal-confirm" style="flex:1;padding:11px;border-radius:8px;border:none;background:#d63939;color:#fff;font-size:14px;font-weight:700;cursor:pointer;"><i class="fa fa-trash"></i> Tak, usuń</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+

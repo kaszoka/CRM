@@ -1,0 +1,931 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}{% endblock %}
+
+{% block page_content %}
+<style>
+    .clients-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    .clients-header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+    .clients-header .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .clients-stats {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    .clients-stats .cs-item {
+        font-size: 13px;
+        color: #626976;
+    }
+    .clients-stats .cs-item strong {
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    /* Client cards */
+    .client-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .client-card {
+        background: #fff;
+        border: 1px solid #e6e7e9;
+        border-radius: 8px;
+        padding: 18px 22px;
+        display: grid;
+        grid-template-columns: minmax(145px, 180px) 1fr 1fr 1fr auto;
+        gap: 16px;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .client-card:hover {
+        border-color: #c5d4e8;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        transform: translateY(-1px);
+    }
+    @media (max-width: 1200px) {
+        .client-card {
+            grid-template-columns: minmax(135px, 170px) 1fr 1fr auto;
+        }
+        .client-card .cc-business-right { display: none; }
+    }
+    @media (max-width: 900px) {
+        .client-card {
+            grid-template-columns: minmax(125px, 160px) 1fr auto;
+        }
+        .client-card .cc-business-left,
+        .client-card .cc-business-right { display: none; }
+    }
+
+    /* ─── Mobile ≤640px ──────────────────────────────── */
+    @media (max-width: 640px) {
+        .clients-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+        .clients-header h1 { font-size: 20px; }
+        .clients-header .header-right {
+            flex-direction: column;
+            gap: 8px;
+        }
+        .clients-header .header-right a {
+            justify-content: center;
+            width: 100%;
+        }
+        .active-filters-bar {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .active-filters-bar::-webkit-scrollbar { display: none; }
+        .client-card {
+            grid-template-columns: 1fr auto;
+            padding: 12px 14px;
+            gap: 10px;
+        }
+        .cc-created { grid-column: 1 / -1; }
+        .cc-main .cc-contact { flex-direction: column; gap: 4px; }
+        .pagination-wrapper {
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+    }
+
+    /* Creator info */
+    .cc-created {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .cc-created-label {
+        font-size: 11px;
+        color: #94a3b8;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    .cc-created-name {
+        font-size: 12.5px;
+        color: var(--tabler-text, #e5e7eb);
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .cc-created-date {
+        font-size: 11.5px;
+        color: #94a3b8;
+        white-space: nowrap;
+    }
+
+    /* Main info */
+    .cc-main .cc-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 3px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .cc-main .cc-name .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .status-dot.biz { background: #2fb344; }
+    .status-dot.pur { background: #9f4cf6; }
+
+    .cc-main .cc-sub {
+        font-size: 12.5px;
+        color: #626976;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .cc-main .cc-sub .sep { color: #d1d5db; }
+    .cc-main .cc-contact {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 3px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .cc-main .cc-contact a {
+        color: #206bc4;
+        text-decoration: none;
+        font-size: 12px;
+    }
+    .cc-main .cc-contact a:hover { text-decoration: underline; }
+
+    /* Business info */
+    .cc-business {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+    .cc-business .ccb-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+    .cc-business .ccb-label {
+        color: #94a3b8;
+        width: 72px;
+        flex-shrink: 0;
+    }
+    .cc-business .ccb-value {
+        color: #1e293b;
+        font-weight: 500;
+    }
+
+    /* Actions */
+    .cc-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+    .cc-actions .cc-act {
+        width: 34px;
+        height: 34px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 13px;
+        transition: all 0.15s ease;
+        border: 1px solid transparent;
+    }
+    .cc-act.view { color: #206bc4; background: #f8fafc; border-color: #e6e7e9; }
+    .cc-act.view:hover { background: #e7f1ff; border-color: #c5d4e8; }
+    .cc-act.edit { color: #626976; background: #f8fafc; border-color: #e6e7e9; }
+    .cc-act.edit:hover { background: #f1f5f9; border-color: #cdd1d6; }
+    .cc-act.delete { color: #d63939; background: #f8fafc; border-color: #e6e7e9; }
+    .cc-act.delete:hover { background: #fce8e8; border-color: #f5c2c2; }
+
+    .empty-clients {
+        text-align: center;
+        padding: 60px 20px;
+        color: #94a3b8;
+    }
+    .empty-clients i { font-size: 40px; margin-bottom: 12px; display: block; opacity: 0.4; }
+    .empty-clients p { font-size: 15px; margin: 0 0 16px 0; }
+    .empty-clients a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #206bc4;
+        color: #fff;
+        padding: 8px 18px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 13.5px;
+        font-weight: 500;
+    }
+    .empty-clients a:hover { background: #1a56a0; }
+
+    .pagination-wrapper {
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Filter button */
+    .filter-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 500;
+        background: var(--tabler-card-bg, #0f172a);
+        color: var(--tabler-text-muted, #9ca3af);
+        border: 1px solid var(--tabler-border, #1f2937);
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+    }
+    .filter-btn:hover {
+        background: var(--tabler-row-hover, #111827);
+        color: var(--tabler-text, #e5e7eb);
+        border-color: var(--tabler-border, #334155);
+    }
+    .filter-btn.has-filters {
+        background: var(--tabler-badge-info-bg, #1d4ed8);
+        border-color: var(--tabler-primary, #3b82f6);
+        color: var(--tabler-primary-foreground, #0b1120);
+    }
+    .filter-btn .filter-count {
+        background: #206bc4;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 10px;
+    }
+    .filter-reset-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: var(--tabler-card-bg, #0f172a);
+        border: 1px solid var(--tabler-border, #1f2937);
+        color: var(--tabler-danger, #f97373);
+        text-decoration: none;
+        font-size: 13px;
+        transition: all 0.15s;
+    }
+    .filter-reset-btn:hover {
+        background: var(--tabler-badge-danger-bg, #450a0a);
+        border-color: var(--tabler-danger, #f97373);
+    }
+    .active-filters-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+        align-items: center;
+    }
+    .active-filters-bar .af-label {
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+    .active-filters-bar .af-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #e7f1ff;
+        color: #206bc4;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 3px 10px;
+        border-radius: 6px;
+    }
+
+    /* Status badges in client card rows */
+    .ccb-badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 999px;
+        line-height: 1.6;
+        white-space: nowrap;
+    }
+    .ccb-badge-green  { background: #2fb344; color: #fff; border: none; }
+    .ccb-badge-purple { background: #9f4cf6; color: #fff; border: none; }
+    .ccb-badge-blue   { background: #3b82f6; color: #fff; border: none; }
+    .ccb-badge-red    { background: #d63939; color: #fff; border: none; }
+    .ccb-badge-orange { background: #f76707; color: #fff; border: none; }
+
+    /* Email export checkboxes */
+    .email-export-active .client-card {
+        position: relative;
+        cursor: default;
+    }
+    .email-export-active .client-card.has-email {
+        cursor: pointer;
+    }
+    .email-export-active .cc-email-check {
+        display: block !important;
+    }
+    .email-export-active .client-card.no-email {
+        opacity: 0.5;
+    }
+    .client-card.email-selected {
+        outline: 2px solid var(--tabler-primary, #3b82f6);
+        outline-offset: 2px;
+    }
+
+    /* Email export page picker */
+    .email-page-picker {
+        position: relative;
+    }
+    .email-page-picker-toggle {
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--tabler-border, #1f2937);
+        background: var(--tabler-card-bg, #020617);
+        color: var(--tabler-text, #e5e7eb);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .email-page-picker-toggle:hover {
+        border-color: var(--tabler-primary, #3b82f6);
+    }
+    .email-page-picker-menu {
+        display: none;
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        z-index: 1000;
+        min-width: 180px;
+        max-height: 260px;
+        overflow-y: auto;
+        background: var(--tabler-card-bg, #0f172a);
+        border: 1px solid var(--tabler-border, #1e293b);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        padding: 8px;
+    }
+    .email-page-picker-menu.open {
+        display: block;
+    }
+    .email-page-picker-actions {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--tabler-border, #1e293b);
+    }
+    .email-page-picker-actions button {
+        flex: 1;
+        font-size: 11px;
+        padding: 3px 6px;
+        border-radius: 5px;
+        border: 1px solid var(--tabler-border, #1f2937);
+        background: transparent;
+        color: var(--tabler-text, #e5e7eb);
+        cursor: pointer;
+    }
+    .email-page-picker-actions button:hover {
+        border-color: var(--tabler-primary, #3b82f6);
+        color: var(--tabler-primary, #3b82f6);
+    }
+    .email-page-picker-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .email-page-picker-list label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--tabler-text, #e5e7eb);
+        padding: 4px 6px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 0;
+    }
+    .email-page-picker-list label:hover {
+        background: rgba(59, 130, 246, 0.12);
+    }
+    .email-page-picker-list input[type="checkbox"] {
+        margin: 0;
+        cursor: pointer;
+    }
+</style>
+
+<div data-controller="client-filter">
+
+{% set clients = entities %}
+{% set applied_filters = app.request.query.all['filters']|default([])|keys %}
+{% set has_filters = filters is defined and filters|length > 0 %}
+
+{% set fBusiness = app.request.query.get('f_business') %}
+{% set fPurchased = app.request.query.get('f_purchased') %}
+{% set fLocal = app.request.query.get('f_local') %}
+{% set fNoNip = app.request.query.get('f_no_nip') %}
+{% set fIndustry = app.request.query.get('f_industry') %}
+{% set fAssortment = app.request.query.get('f_assortment') %}
+{% set fSource = app.request.query.get('f_source') %}
+{% set fContact = app.request.query.get('f_contact') %}
+{% set fCreatedBy = app.request.query.get('f_created_by') %}
+{% set fExcludeNoContact = app.request.query.get('f_exclude_no_contact') %}
+{% set fExcludeNotInterested = app.request.query.get('f_exclude_not_interested') %}
+{% set fExcludeDetaliczny = app.request.query.get('f_exclude_detaliczny') %}
+{% set fSortTurnover = app.request.query.get('f_sort_turnover') %}
+
+{% set industryOptions = industryFilterOptions|default({}) %}
+{% set assortmentOptions = assortmentFilterOptions|default({}) %}
+{% set sourceOptions = sourceFilterOptions|default({}) %}
+{% set createdByOptions = createdByFilterOptions|default({}) %}
+
+<div class="clients-header">
+    <h1>Klienci</h1>
+    <div class="header-right">
+        {% if has_filters %}
+            <div class="datagrid-filters" style="display:inline-flex;align-items:center;gap:6px;">
+                <a href="#" data-href="{{ ea_url().setAction('renderFilters') }}" class="filter-btn action-filters-button disabled {{ applied_filters ? 'has-filters' : '' }}" data-bs-toggle="modal" data-bs-target="#modal-filters">
+                    <i class="fa fa-filter"></i> Filtry
+                    {% if applied_filters %}<span class="filter-count">{{ applied_filters|length }}</span>{% endif %}
+                </a>
+            </div>
+        {% endif %}
+
+        {% if is_granted('ROLE_USER') %}
+        <a href="{{ ea_url().setAction('new') }}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;font-size:13.5px;font-weight:500;text-decoration:none;background:#206bc4;color:#fff;">
+            <i class="fa fa-plus"></i> Dodaj Klienta
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="active-filters-bar" style="margin-bottom:18px;">
+    <span class="af-label"><i class="fa fa-filter"></i> Filtruj:</span>
+
+    <select onchange="updateClientFilterParam('f_business', this.value)"
+            style="font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--tabler-border,#1f2937);background:var(--tabler-card-bg,#020617);color:var(--tabler-text,#e5e7eb);">
+        <option value="" {{ fBusiness is null or fBusiness == '' ? 'selected' : '' }}>Konto biz. (wszyscy)</option>
+        <option value="1" {{ fBusiness == '1' ? 'selected' : '' }}>Konto biz. = Tak</option>
+        <option value="0" {{ fBusiness == '0' ? 'selected' : '' }}>Konto biz. = Nie</option>
+    </select>
+
+    <select onchange="updateClientFilterParam('f_purchased', this.value)"
+            style="font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--tabler-border,#1f2937);background:var(--tabler-card-bg,#020617);color:var(--tabler-text,#e5e7eb);">
+        <option value="" {{ fPurchased is null or fPurchased == '' ? 'selected' : '' }}>Kupił (wszyscy)</option>
+        <option value="1" {{ fPurchased == '1' ? 'selected' : '' }}>Kupił = Tak</option>
+        <option value="0" {{ fPurchased == '0' ? 'selected' : '' }}>Kupił = Nie</option>
+    </select>
+
+    <select onchange="updateClientFilterParam('f_local', this.value)"
+            style="font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--tabler-border,#1f2937);background:var(--tabler-card-bg,#020617);color:var(--tabler-text,#e5e7eb);">
+        <option value="" {{ fLocal is null or fLocal == '' ? 'selected' : '' }}>Lokalny (wszyscy)</option>
+        <option value="1" {{ fLocal == '1' ? 'selected' : '' }}>Lokalny = Tak</option>
+        <option value="0" {{ fLocal == '0' ? 'selected' : '' }}>Lokalny = Nie</option>
+    </select>
+
+    {% set noNipUrl = fNoNip == '1'
+        ? ea_url().unset('page').unset('f_no_nip').setAction('index')
+        : ea_url().unset('page').set('f_no_nip', '1').setAction('index') %}
+    <a href="{{ noNipUrl }}"
+       class="filter-btn {{ fNoNip == '1' ? 'has-filters' : '' }}"
+       style="padding:4px 10px;font-size:12px;">
+        <i class="fa fa-ban"></i> Dział. nierejestrowana
+    </a>
+
+    {% set excludeNoContactActive = fExcludeNoContact != '0' %}
+    {% set excludeNoContactUrl = excludeNoContactActive
+        ? ea_url().unset('page').set('f_exclude_no_contact', '0').setAction('index')
+        : ea_url().unset('page').unset('f_exclude_no_contact').setAction('index') %}
+    <a href="{{ excludeNoContactUrl }}"
+       class="filter-btn {{ excludeNoContactActive ? 'has-filters' : '' }}"
+       style="padding:4px 10px;font-size:12px;">
+        <i class="fa fa-eye"></i> Bez: Nie kontaktować
+    </a>
+
+    {% set excludeNotInterestedActive = fExcludeNotInterested != '0' %}
+    {% set excludeNotInterestedUrl = excludeNotInterestedActive
+        ? ea_url().unset('page').set('f_exclude_not_interested', '0').setAction('index')
+        : ea_url().unset('page').unset('f_exclude_not_interested').setAction('index') %}
+    <a href="{{ excludeNotInterestedUrl }}"
+       class="filter-btn {{ excludeNotInterestedActive ? 'has-filters' : '' }}"
+       style="padding:4px 10px;font-size:12px;">
+        <i class="fa fa-user-slash"></i> Bez: niezainteresowany
+    </a>
+
+    {% set excludeDetalicznyActive = fExcludeDetaliczny != '0' %}
+    {% set excludeDetalicznyUrl = excludeDetalicznyActive
+        ? ea_url().unset('page').set('f_exclude_detaliczny', '0').setAction('index')
+        : ea_url().unset('page').unset('f_exclude_detaliczny').setAction('index') %}
+    <a href="{{ excludeDetalicznyUrl }}"
+       class="filter-btn {{ excludeDetalicznyActive ? 'has-filters' : '' }}"
+       style="padding:4px 10px;font-size:12px;">
+        <i class="fa fa-store-slash"></i> Bez: detaliczny
+    </a>
+
+    <select onchange="updateClientFilterParam('f_industry', this.value)"
+            style="font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--tabler-border,#1f2937);background:var(--tabler-card-bg,#020617);color:var(--tabler-text,#e5e7eb);">
+        <option value="" {{ fIndustry is empty ? 'selected' : '' }}>Wszystkie branże</option>
+        {% for nameKey,name in industryOptions %}
+            <option value="{{ nameKey }}" {{ fIndustry == nameKey ? 'selected' : '' }}>{{ name }}</option>
+        {% endfor %}
+    </select>
+
+    <select onchange="updateClientFilterParam('f_assortment', this.value)"
+            style="font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--tabler-border,#1f2937);background:var(--tabler-card-bg,#020617);color:var(--tabler-text,#e5e7eb);">
+        <option value="" {{ fAssortment is empty ? 'selected' : '' }}>Wszystkie asortymenty</option>
+        {% for nameKey,name in assortmentOptions %}
+            <option value="{{ nameKey }}" {{ fAssortment == nameKey ? 'selected' : '' }}>{{ name }}</option>
+        {% endfor %}
+    </select>
+
+    <select onchange="updateClientFilterParam('f_source', this.value)"
+            style="font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--tabler-border,#1f2937);background:var(--tabler-card-bg,#020617);color:var(--tabler-text,#e5e7eb);">
+        <option value="" {{ fSource is empty ? 'selected' : '' }}>Wszystkie źródła</option>
+        {% for nameKey,name in sourceOptions %}
+            <option value="{{ nameKey }}" {{ fSource == nameKey ? 'selected' : '' }}>{{ name }}</option>
+        {% endfor %}
+    </select>
+
+    <select onchange="updateClientFilterParam('f_created_by', this.value)"
+            style="font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--tabler-border,#1f2937);background:var(--tabler-card-bg,#020617);color:var(--tabler-text,#e5e7eb);">
+        <option value="" {{ fCreatedBy is empty ? 'selected' : '' }}>Utworzył (wszyscy)</option>
+        {% for userId,userName in createdByOptions %}
+            <option value="{{ userId }}" {{ fCreatedBy == userId ? 'selected' : '' }}>{{ userName }}</option>
+        {% endfor %}
+    </select>
+
+    {% set sortTurnoverDesc = ea_url().unset('page').set('f_sort_turnover', 'desc') %}
+    {% set sortTurnoverAsc  = ea_url().unset('page').set('f_sort_turnover', 'asc') %}
+    <a href="{{ sortTurnoverDesc }}" class="filter-btn {{ fSortTurnover == 'desc' ? 'has-filters' : '' }}" style="padding:4px 10px;font-size:12px;">
+        Obroty ↓
+    </a>
+    <a href="{{ sortTurnoverAsc }}" class="filter-btn {{ fSortTurnover == 'asc' ? 'has-filters' : '' }}" style="padding:4px 10px;font-size:12px;">
+        Obroty ↑
+    </a>
+
+    <a href="{{ ea_url().unset('page').unset('filters').unset('f_business').unset('f_purchased').unset('f_local').unset('f_no_nip').unset('f_exclude_no_contact').unset('f_exclude_not_interested').unset('f_exclude_detaliczny').unset('f_industry').unset('f_assortment').unset('f_source').unset('f_contact').unset('f_created_by').unset('f_sort_turnover').setAction('index') }}"
+       class="filter-btn" style="padding:4px 10px;font-size:12px;color:#d63939;border-color:#f5c2c2;background:#fff;">
+        Wyczyść wszystko
+    </a>
+</div>
+
+{% if applied_filters|length > 0 %}
+{% set filterLabels = {
+    'companyName': 'Nazwa firmy',
+    'nip': 'NIP',
+    'industries': 'Branża',
+    'hasBusinessAccount': 'Konto biznesowe',
+    'hasPurchased': 'Kupił',
+    'isLocalClient': 'Klient lokalny',
+    'contactMethods': 'Forma kontaktu',
+    'source': 'Źródło'
+} %}
+<div class="active-filters-bar">
+    <span class="af-label"><i class="fa fa-filter"></i> Aktywne filtry:</span>
+    {% for filterName in applied_filters %}
+        <span class="af-tag">{{ filterLabels[filterName] ?? filterName }}</span>
+    {% endfor %}
+    <a href="{{ ea_url().unset('filters').setAction('index') }}" style="font-size:12px;color:#d63939;text-decoration:none;font-weight:500;">Wyczyść wszystkie</a>
+</div>
+{% endif %}
+
+{% if clients|length > 0 %}
+
+<div id="email-export-bar"
+     data-controller="email-export"
+     data-export-url="{{ ea_url().unset('page').setAction('emailExport') }}"
+     data-current-page="{{ paginator.currentPage|default(1) }}"
+     data-last-page="{{ paginator.lastPage|default(1) }}"
+     style="display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;margin-bottom:12px;background:var(--tabler-card-bg,#0f172a);border:1px solid var(--tabler-border,#1e293b);border-radius:10px;">
+    <span style="font-size:13px;color:var(--tabler-text,#e2e8f0);font-weight:600;">
+        <i class="fa fa-envelope"></i> Eksport emaili:
+        <span id="email-selected-count" style="color:var(--tabler-primary,#3b82f6);">0</span> zaznaczonych
+    </span>
+    <div class="email-page-picker" id="email-page-picker">
+        <button type="button" class="email-page-picker-toggle" id="email-page-picker-toggle" onclick="emailExport.togglePagePicker(event)">
+            <i class="fa fa-list"></i>
+            <span id="email-page-picker-label">Strony (0)</span>
+            <i class="fa fa-chevron-down" style="font-size:10px;opacity:0.7;"></i>
+        </button>
+        <div class="email-page-picker-menu" id="email-page-picker-menu">
+            <div class="email-page-picker-actions">
+                <button type="button" onclick="emailExport.selectAllPagesInPicker()">Wszystkie</button>
+                <button type="button" onclick="emailExport.clearPagesInPicker()">Wyczyść</button>
+            </div>
+            <div class="email-page-picker-list">
+                {% set exportLastPage = paginator.lastPage|default(1) %}
+                {% set exportCurrentPage = paginator.currentPage|default(1) %}
+                {% for p in 1..exportLastPage %}
+                <label>
+                    <input type="checkbox" class="email-page-checkbox" value="{{ p }}"{% if p == exportCurrentPage %} checked{% endif %}>
+                    Strona {{ p }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <button type="button" onclick="emailExport.selectSelectedPages()" class="filter-btn has-filters" style="padding:4px 10px;font-size:12px;">
+        <i class="fa fa-layer-group"></i> Zaznacz strony
+    </button>
+    <button type="button" id="btn-select-all-emails" onclick="emailExport.selectAllPages()" class="filter-btn" style="padding:4px 10px;font-size:12px;">
+        <i class="fa fa-check-double"></i> Zaznacz wszystkich
+    </button>
+    <button type="button" onclick="emailExport.selectCurrentPage()" class="filter-btn" style="padding:4px 10px;font-size:12px;">
+        <i class="fa fa-check"></i> Tę stronę
+    </button>
+    <button type="button" id="btn-deselect-all-emails" onclick="emailExport.deselectAll()" class="filter-btn" style="padding:4px 10px;font-size:12px;">
+        <i class="fa fa-xmark"></i> Odznacz
+    </button>
+    <button type="button" onclick="emailExport.copyEmails()" class="filter-btn has-filters" style="padding:4px 10px;font-size:12px;">
+        <i class="fa fa-copy"></i> Kopiuj maile
+    </button>
+    <button type="button" onclick="emailExport.showModal()" class="filter-btn has-filters" style="padding:4px 10px;font-size:12px;background:var(--tabler-success,#2fb344);border-color:var(--tabler-success,#2fb344);">
+        <i class="fa fa-list"></i> Pokaż listę
+    </button>
+    <button type="button" onclick="emailExport.toggleBar()" class="filter-btn" style="padding:4px 10px;font-size:12px;color:#d63939;border-color:#f5c2c2;">
+        <i class="fa fa-times"></i> Zamknij
+    </button>
+</div>
+
+<div style="margin-bottom:10px;">
+    <button type="button" id="btn-open-email-export" onclick="emailExport.toggleBar()" class="filter-btn" style="padding:4px 12px;font-size:12px;">
+        <i class="fa fa-envelope"></i> Eksportuj maile
+    </button>
+</div>
+
+<div id="email-export-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+    <div style="background:var(--tabler-card-bg,#0f172a);border:1px solid var(--tabler-border,#1e293b);border-radius:12px;padding:24px;max-width:560px;width:90%;max-height:80vh;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="margin:0;font-size:16px;color:var(--tabler-text,#e2e8f0);"><i class="fa fa-envelope"></i> Lista emaili</h3>
+            <button type="button" onclick="emailExport.closeModal()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;">✕</button>
+        </div>
+        <p style="margin:0;font-size:12px;color:#94a3b8;" id="email-modal-count"></p>
+        <textarea id="email-export-textarea" readonly
+            style="flex:1;min-height:200px;max-height:50vh;background:var(--tabler-bg,#020617);border:1px solid var(--tabler-border,#1e293b);border-radius:8px;padding:10px;color:var(--tabler-text,#e2e8f0);font-size:13px;font-family:monospace;resize:vertical;outline:none;"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" onclick="emailExport.copyFromModal()" class="filter-btn has-filters" style="padding:6px 14px;font-size:13px;">
+                <i class="fa fa-copy"></i> Kopiuj do schowka
+            </button>
+            <button type="button" id="email-copy-confirm" style="display:none;color:#2fb344;font-size:13px;padding:6px 0;background:none;border:none;">
+                <i class="fa fa-check"></i> Skopiowano!
+            </button>
+            <button type="button" onclick="emailExport.closeModal()" class="filter-btn" style="padding:6px 14px;font-size:13px;">Zamknij</button>
+        </div>
+    </div>
+</div>
+
+<div class="client-cards">
+    {% for entity in clients %}
+        {% set client = entity.instance %}
+        {% set detailUrl = ea_url().setAction('detail').setEntityId(client.id) %}
+        {% set editUrl = ea_url().setAction('edit').setEntityId(client.id) %}
+
+        <div class="client-card {{ client.email ? 'has-email' : 'no-email' }}"
+             data-email="{{ client.email }}"
+             data-client-id="{{ client.id }}"
+             onclick="emailExport.handleCardClick(event, this, '{{ detailUrl }}')" data-detail-url="{{ detailUrl }}">
+
+            <div class="cc-email-check" onclick="event.stopPropagation()" style="display:none;position:absolute;top:10px;left:10px;z-index:10;">
+                <input type="checkbox" class="client-email-checkbox"
+                       data-client-id="{{ client.id }}"
+                       data-email="{{ client.email }}"
+                       data-name="{{ client.companyName|e('html_attr') }}"
+                       style="width:18px;height:18px;cursor:pointer;accent-color:var(--tabler-primary,#3b82f6);">
+            </div>
+
+            <div class="cc-created">
+                <div class="cc-created-label"><i class="fa fa-user-plus"></i> Dodał</div>
+                <div class="cc-created-name">
+                    {% if client.createdBy %}
+                        {{ client.createdBy.firstName }} {{ client.createdBy.lastName }}
+                    {% else %}
+                        Nieznany
+                    {% endif %}
+                </div>
+                <div class="cc-created-date">
+                    {{ client.createdAt ? client.createdAt|date('d.m.Y H:i') : '—' }}
+                </div>
+            </div>
+
+            <div class="cc-main">
+                <div class="cc-name">
+                    {{ client.companyName }}
+                    {% if client.hasBusinessAccount %}
+                        <span class="status-dot biz" title="Konto biznesowe"></span>
+                    {% endif %}
+                    {% if client.hasPurchased %}
+                        <span class="status-dot pur" title="Kupił"></span>
+                    {% endif %}
+                </div>
+                <div class="cc-sub">
+                    {% if client.nip %}
+                        <span>NIP: {{ client.nip }}</span>
+                    {% else %}
+                        <span style="color:#94a3b8;">Działalność nierejestrowana</span>
+                    {% endif %}
+                    {% if client.fullAddress %}
+                        <span class="sep">&middot;</span>
+                        <span>{{ client.fullAddress }}</span>
+                    {% endif %}
+                </div>
+                <div class="cc-contact">
+                    {% if client.phone %}
+                        <a href="tel:{{ client.phone }}" onclick="event.stopPropagation()">
+                            <i class="fa fa-phone"></i> {{ client.phone }}
+                        </a>
+                    {% endif %}
+                    {% if client.email %}
+                        <a href="mailto:{{ client.email }}" onclick="event.stopPropagation()">
+                            <i class="fa fa-envelope"></i> {{ client.email }}
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="cc-business cc-business-left">
+                <div class="ccb-row">
+                    <span class="ccb-label">Branża</span>
+                    <span class="ccb-value">{{ client.industries|length > 0 ? client.industriesString : '—' }}</span>
+                </div>
+                <div class="ccb-row">
+                    <span class="ccb-label">Asortyment</span>
+                    <span class="ccb-value">{{ client.assortments|length > 0 ? client.assortmentsString : '—' }}</span>
+                </div>
+                <div class="ccb-row">
+                    <span class="ccb-label">Obroty</span>
+                    <span class="ccb-value">{{ client.turnover ? client.turnover|number_format(2, ',', ' ') ~ ' PLN' : '—' }}</span>
+                </div>
+                <div class="ccb-row">
+                    <span class="ccb-label">Źródła</span>
+                    <span class="ccb-value">{{ client.sourcesString is defined and client.sourcesString ? client.sourcesString : '—' }}</span>
+                </div>
+            </div>
+
+            <div class="cc-business cc-business-right">
+                <div class="ccb-row">
+                    <span class="ccb-label">Kontakt</span>
+                    {% if client.contactMethods is not empty %}
+                        {% set isNone = client.isDoNotContact %}
+                        {% if isNone %}
+                            <span class="ccb-badge ccb-badge-red">Nie kontaktować</span>
+                        {% else %}
+                            <span class="ccb-value" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                                {% for m in client.contactMethods %}
+                                    {% if m.slug == 'detaliczny' or m.slug == 'niezainteresowany' %}
+                                        <span class="ccb-badge ccb-badge-orange">{{ m.name }}</span>
+                                    {% else %}
+                                        <span>{{ m.name }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        <span class="ccb-value">—</span>
+                    {% endif %}
+                </div>
+                <div class="ccb-row">
+                    <span class="ccb-label">Konto biz.</span>
+                    {% if client.hasBusinessAccount %}
+                        <span class="ccb-badge ccb-badge-green">Tak</span>
+                    {% else %}
+                        <span class="ccb-value">Nie</span>
+                    {% endif %}
+                </div>
+                <div class="ccb-row">
+                    <span class="ccb-label">Kupił</span>
+                    {% if client.hasPurchased %}
+                        <span class="ccb-badge ccb-badge-purple">Tak</span>
+                    {% else %}
+                        <span class="ccb-value">Nie</span>
+                    {% endif %}
+                </div>
+                <div class="ccb-row">
+                    <span class="ccb-label">Lokalny</span>
+                    {% if client.isLocalClient %}
+                        <span class="ccb-badge ccb-badge-blue">Tak</span>
+                    {% else %}
+                        <span class="ccb-value">Nie</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="cc-actions" onclick="event.stopPropagation()">
+                {% if is_granted('ROLE_USER') %}
+                    <a href="{{ editUrl }}" class="cc-act edit" title="Edytuj"><i class="fa fa-pen"></i></a>
+                {% else %}
+                    <a href="{{ ea_url().setAction('detail').setEntityId(client.id) }}" class="cc-act view" title="Podgląd"><i class="fa fa-eye"></i></a>
+                {% endif %}
+                {% if is_granted('ROLE_ADMIN') %}
+                    <form id="del-client-{{ client.id }}" method="POST" action="{{ ea_url().setAction('delete').setEntityId(client.id) }}" style="display:inline;margin:0;">
+                        <input type="hidden" name="token" value="{{ csrf_token('ea-delete') }}">
+                        <button type="button" class="cc-act delete" title="Usuń klienta" style="border:none;cursor:pointer;"
+                                onclick="openDeleteModal('del-client-{{ client.id }}', '{{ client.companyName|e('js') }}')">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{% if paginator is defined and paginator.numResults > 0 %}
+<div class="pagination-wrapper">
+    <div style="font-size:13px;color:#626976;">
+        {{ paginator.numResults }} klient{{ paginator.numResults > 1 ? 'ów' : '' }} &middot; strona {{ paginator.currentPage }} z {{ paginator.lastPage }}
+    </div>
+    {% if paginator.lastPage > 1 %}
+    <nav>
+        <ul class="pagination" style="margin:0;">
+            {% if paginator.hasPreviousPage %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ ea_url().set('page', paginator.previousPage) }}"><i class="fa fa-chevron-left"></i></a>
+                </li>
+            {% endif %}
+            {% for i in 1..paginator.lastPage %}
+                <li class="page-item {{ i == paginator.currentPage ? 'active' : '' }}">
+                    <a class="page-link" href="{{ ea_url().set('page', i) }}">{{ i }}</a>
+                </li>
+            {% endfor %}
+            {% if paginator.hasNextPage %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ ea_url().set('page', paginator.nextPage) }}"><i class="fa fa-chevron-right"></i></a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-clients">
+    <i class="fa fa-building"></i>
+    <p>Nie masz jeszcze żadnych klientów w bazie.</p>
+    {% if is_granted('ROLE_USER') %}<a href="{{ ea_url().setAction('new') }}"><i class="fa fa-plus"></i> Dodaj pierwszego klienta</a>{% endif %}
+</div>
+{% endif %}
+
+{% if has_filters %}
+    {{ include('@EasyAdmin/crud/includes/_filters_modal.html.twig') }}
+{% endif %}
+
+<div id="delete-modal" data-controller="delete-modal" data-delete-modal-target="modal" data-action="click->delete-modal#backdrop" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:36px 32px 28px;max-width:400px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,0.22);text-align:center;">
+        <div style="width:60px;height:60px;background:#fce8e8;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+            <i class="fa fa-trash" style="color:#d63939;font-size:24px;"></i>
+        </div>
+        <h3 style="font-size:18px;font-weight:700;color:#1e293b;margin:0 0 10px;">Potwierdź usunięcie</h3>
+        <p id="delete-modal-text" data-delete-modal-target="text" style="font-size:14px;color:#626976;margin:0 0 24px;line-height:1.5;"></p>
+        <div style="display:flex;gap:10px;">
+            <button type="button" data-action="delete-modal#close" onclick="closeDeleteModal()" style="flex:1;padding:11px;border-radius:8px;border:1px solid #e6e7e9;background:#fff;color:#626976;font-size:14px;font-weight:500;cursor:pointer;">
+                Anuluj
+            </button>
+            <button type="button" data-action="delete-modal#confirm" id="delete-modal-confirm" style="flex:1;padding:11px;border-radius:8px;border:none;background:#d63939;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">
+                <i class="fa fa-trash"></i> Tak, usuń
+            </button>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+

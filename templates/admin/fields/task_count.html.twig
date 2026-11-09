@@ -1,0 +1,6 @@
+{% if field.value is not null %}
+    <span class="badge bg-secondary">{{ field.value|length }} zadań</span>
+{% else %}
+    <span class="badge bg-light text-muted">0 zadań</span>
+{% endif %}
+

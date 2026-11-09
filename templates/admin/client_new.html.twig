@@ -1,0 +1,19 @@
+{% extends '@!EasyAdmin/crud/new.html.twig' %}
+
+{% block main %}
+    <div data-controller="nip-validator company-name-check">
+        {{ parent() }}
+    </div>
+{% endblock %}
+
+{% block page_actions %}
+    {{ parent() }}
+    <button type="button"
+            id="btn-save-and-add-task"
+            class="btn btn-secondary"
+            data-controller="client-form"
+            data-client-form-mode-value="new"
+            data-action="click->client-form#saveAndGoTasks">
+        <i class="fa fa-list-check"></i> Zapisz i dodaj zadanie
+    </button>
+{% endblock page_actions %}

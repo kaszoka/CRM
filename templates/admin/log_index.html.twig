@@ -1,0 +1,335 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}{% endblock %}
+
+{% block page_content %}
+<style>
+    .logs-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    .logs-header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--tabler-text);
+        margin: 0;
+    }
+    .logs-header .logs-count {
+        font-size: 13px;
+        color: var(--tabler-text-muted);
+    }
+
+    .log-timeline {
+        position: relative;
+        padding-left: 32px;
+    }
+    .log-timeline::before {
+        content: '';
+        position: absolute;
+        left: 11px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--tabler-border);
+    }
+
+    .log-entry {
+        position: relative;
+        margin-bottom: 4px;
+        background: var(--tabler-card-bg);
+        border: 1px solid var(--tabler-border);
+        border-radius: 10px;
+        padding: 14px 18px;
+        transition: all 0.15s ease;
+    }
+    .log-entry:hover {
+        border-color: var(--tabler-text-light);
+        box-shadow: var(--tabler-shadow);
+    }
+
+    .log-entry .log-dot {
+        position: absolute;
+        left: -27px;
+        top: 18px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid var(--tabler-card-bg);
+        box-shadow: 0 0 0 2px var(--tabler-border);
+    }
+    .log-dot.create { background: var(--tabler-success); box-shadow: 0 0 0 2px var(--tabler-badge-success-bg); }
+    .log-dot.update { background: var(--tabler-primary); box-shadow: 0 0 0 2px var(--tabler-badge-info-bg); }
+    .log-dot.delete { background: var(--tabler-danger); box-shadow: 0 0 0 2px var(--tabler-badge-danger-bg); }
+    .log-dot.status_change { background: var(--tabler-warning); box-shadow: 0 0 0 2px var(--tabler-badge-warning-bg); }
+    .log-dot.note_add { background: var(--tabler-note); box-shadow: 0 0 0 2px var(--tabler-badge-note-bg); }
+    .log-dot.note_delete { background: var(--tabler-text-muted); box-shadow: 0 0 0 2px var(--tabler-badge-secondary-bg); }
+
+    .log-entry .log-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 6px;
+    }
+
+    .log-action-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .log-action-badge.create { background: var(--tabler-badge-success-bg); color: var(--tabler-success); }
+    .log-action-badge.update { background: var(--tabler-badge-info-bg); color: var(--tabler-primary); }
+    .log-action-badge.delete { background: var(--tabler-badge-danger-bg); color: var(--tabler-danger); }
+    .log-action-badge.status_change { background: var(--tabler-badge-warning-bg); color: var(--tabler-warning); }
+    .log-action-badge.note_add { background: var(--tabler-badge-note-bg); color: var(--tabler-note); }
+    .log-action-badge.note_delete { background: var(--tabler-badge-secondary-bg); color: var(--tabler-text-muted); }
+
+    .log-entity-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 5px;
+        background: var(--tabler-badge-secondary-bg);
+        color: var(--tabler-text-muted);
+    }
+
+    .log-entity-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--tabler-text);
+    }
+
+    .log-entry .log-desc {
+        font-size: 13px;
+        color: var(--tabler-text-muted);
+        line-height: 1.5;
+        margin-bottom: 6px;
+    }
+
+    .log-changes {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 6px;
+    }
+    .log-change-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12.5px;
+        color: var(--tabler-text-muted);
+    }
+    .log-change-item .ch-label {
+        font-weight: 600;
+        color: var(--tabler-text-muted);
+    }
+    .log-change-item .ch-old {
+        text-decoration: line-through;
+        color: var(--tabler-danger);
+        background: var(--tabler-badge-danger-bg);
+        padding: 1px 6px;
+        border-radius: 4px;
+    }
+    .log-change-item .ch-arrow { color: var(--tabler-text-light); }
+    .log-change-item .ch-new {
+        color: var(--tabler-success);
+        background: var(--tabler-badge-success-bg);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+
+    .log-entry .log-footer {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 12px;
+        color: var(--tabler-text-muted);
+    }
+    .log-footer .lf-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .log-footer .lf-avatar {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--tabler-badge-info-bg);
+        color: var(--tabler-badge-info-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 700;
+    }
+
+    .logs-empty {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--tabler-text-muted);
+    }
+    .logs-empty i { font-size: 40px; display: block; margin-bottom: 12px; opacity: 0.4; }
+    .logs-empty p { font-size: 15px; margin: 0; }
+
+    .logs-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 20px;
+    }
+    .logs-pagination .lp-info { font-size: 13px; color: var(--tabler-text-muted); }
+
+    .log-date-badge {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--tabler-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: var(--tabler-badge-secondary-bg);
+        padding: 4px 12px;
+        border-radius: 6px;
+    }
+    .log-footer .lf-id { color: var(--tabler-text-light); }
+
+    .log-action-icons .create::before { content: '\f067'; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
+    .log-action-icons .update::before { content: '\f044'; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
+</style>
+
+{% set logs = entities %}
+
+<div class="logs-header">
+    <h1><i class="fa fa-history" style="color:var(--tabler-text-muted);margin-right:8px;"></i> Logi aktywności</h1>
+    {% if paginator is defined %}
+        <span class="logs-count">{{ paginator.numResults }} wpisów</span>
+    {% endif %}
+</div>
+
+{% if logs|length > 0 %}
+<div class="log-timeline">
+    {% set prevDate = null %}
+    {% for entity in logs %}
+        {% set log = entity.instance %}
+        {% set logDate = log.createdAt|date('d.m.Y') %}
+
+        {% if logDate != prevDate %}
+            <div style="position:relative;margin:16px 0 12px -32px;padding-left:32px;">
+                <span class="log-date-badge">
+                    <i class="fa fa-calendar" style="margin-right:4px;"></i>
+                    {% if logDate == "now"|date('d.m.Y') %}
+                        Dzisiaj
+                    {% elseif logDate == ("now"|date_modify("-1 day"))|date('d.m.Y') %}
+                        Wczoraj
+                    {% else %}
+                        {{ logDate }}
+                    {% endif %}
+                </span>
+            </div>
+            {% set prevDate = logDate %}
+        {% endif %}
+
+        <div class="log-entry">
+            <div class="log-dot {{ log.action }}"></div>
+
+            <div class="log-top">
+                <span class="log-action-badge {{ log.action }}">
+                    {% if log.action == 'create' %}<i class="fa fa-plus"></i>
+                    {% elseif log.action == 'update' %}<i class="fa fa-pen"></i>
+                    {% elseif log.action == 'delete' %}<i class="fa fa-trash"></i>
+                    {% elseif log.action == 'status_change' %}<i class="fa fa-arrow-right-arrow-left"></i>
+                    {% elseif log.action == 'note_add' %}<i class="fa fa-sticky-note"></i>
+                    {% elseif log.action == 'note_delete' %}<i class="fa fa-comment-slash"></i>
+                    {% endif %}
+                    {{ log.actionLabel }}
+                </span>
+                <span class="log-entity-badge">
+                    {% if log.entityType == 'Client' %}<i class="fa fa-building"></i>
+                    {% elseif log.entityType == 'Task' %}<i class="fa fa-tasks"></i>
+                    {% elseif log.entityType == 'User' %}<i class="fa fa-user"></i>
+                    {% endif %}
+                    {{ log.entityTypeLabel }}
+                </span>
+                {% if log.entityName %}
+                    <span class="log-entity-name">{{ log.entityName }}</span>
+                {% endif %}
+            </div>
+
+            {% if log.changes is not null and log.changes|length > 0 %}
+            <div class="log-changes">
+                {% for field, change in log.changes %}
+                    <div class="log-change-item">
+                        <span class="ch-label">{{ field }}:</span>
+                        <span class="ch-old">{{ change.old }}</span>
+                        <span class="ch-arrow"><i class="fa fa-arrow-right"></i></span>
+                        <span class="ch-new">{{ change.new }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+            {% elseif log.description %}
+            <div class="log-desc">{{ log.description }}</div>
+            {% endif %}
+
+            <div class="log-footer">
+                {% if log.user %}
+                <span class="lf-item">
+                    <span class="lf-avatar">{{ log.user.firstName|slice(0,1)|upper }}{{ log.user.lastName|slice(0,1)|upper }}</span>
+                    {{ log.user.firstName }} {{ log.user.lastName }}
+                </span>
+                {% endif %}
+                <span class="lf-item">
+                    <i class="fa fa-clock"></i>
+                    {{ log.createdAt|date('H:i:s') }}
+                </span>
+                {% if log.entityId %}
+                <span class="lf-item lf-id">
+                    ID: {{ log.entityId }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{% if paginator is defined and paginator.numResults > 0 and paginator.lastPage > 1 %}
+<div class="logs-pagination">
+    <div class="lp-info">
+        Strona {{ paginator.currentPage }} z {{ paginator.lastPage }}
+    </div>
+    <nav>
+        <ul class="pagination" style="margin:0;">
+            {% if paginator.hasPreviousPage %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ ea_url().set('page', paginator.previousPage) }}"><i class="fa fa-chevron-left"></i></a>
+                </li>
+            {% endif %}
+            {% for i in 1..paginator.lastPage %}
+                <li class="page-item {{ i == paginator.currentPage ? 'active' : '' }}">
+                    <a class="page-link" href="{{ ea_url().set('page', i) }}">{{ i }}</a>
+                </li>
+            {% endfor %}
+            {% if paginator.hasNextPage %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ ea_url().set('page', paginator.nextPage) }}"><i class="fa fa-chevron-right"></i></a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+
+{% else %}
+<div class="logs-empty">
+    <i class="fa fa-history"></i>
+    <p>Brak logów aktywności.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+

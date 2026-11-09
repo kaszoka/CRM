@@ -1,0 +1,114 @@
+{% extends '@!EasyAdmin/crud/edit.html.twig' %}
+
+{% block main %}
+    <div data-controller="nip-validator company-name-check">
+        {{ parent() }}
+
+    {% if quickTaskForm is defined %}
+    <div class="card mt-4" id="quick-task-card">
+        <div class="card-header d-flex align-items-center gap-2">
+            <i class="fa fa-plus-circle text-primary"></i>
+            <strong>Dodaj zadanie dla tego klienta</strong>
+        </div>
+        <div class="card-body">
+            {{ form_start(quickTaskForm, {
+                action: path('admin_client_add_task', { id: entity.instance.id }),
+                method: 'POST',
+                attr: { id: 'quick-task-form', novalidate: 'novalidate' }
+            }) }}
+
+            <div class="row g-3">
+                <div class="col-12">
+                    {{ form_label(quickTaskForm.title) }}
+                    {{ form_widget(quickTaskForm.title) }}
+                    {{ form_errors(quickTaskForm.title) }}
+                </div>
+                <div class="col-12">
+                    {{ form_label(quickTaskForm.description) }}
+                    {{ form_widget(quickTaskForm.description) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_label(quickTaskForm.priority) }}
+                    {{ form_widget(quickTaskForm.priority) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_label(quickTaskForm.status) }}
+                    {{ form_widget(quickTaskForm.status) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_label(quickTaskForm.dueDate) }}
+                    {{ form_widget(quickTaskForm.dueDate) }}
+                </div>
+                <div class="col-12">
+                    {{ form_label(quickTaskForm.assignedTo) }}
+                    {{ form_widget(quickTaskForm.assignedTo) }}
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button type="button" id="btn-add-task" class="btn btn-primary" data-controller="quick-task" data-quick-task-form-id-value="quick-task-form" data-action="click->quick-task#submit">
+                    <i class="fa fa-floppy-disk"></i> Zapisz klienta i dodaj zadanie
+                </button>
+            </div>
+
+            {{ form_end(quickTaskForm) }}
+        </div>
+    </div>
+
+    
+
+    {% if quickCompletedTaskForm is defined %}
+    <div class="card mt-4" id="quick-completed-task-card">
+        <div class="card-header d-flex align-items-center gap-2">
+            <i class="fa fa-circle-check text-success"></i>
+            <strong>Dodaj zakończone zadanie</strong>
+            <span style="font-size:11px;color:#94a3b8;margin-left:4px;">— status: zakończone · priorytet: niski · przypisane do Ciebie</span>
+        </div>
+        <div class="card-body">
+            {{ form_start(quickCompletedTaskForm, {
+                action: path('admin_client_add_completed_task', { id: entity.instance.id }),
+                method: 'POST',
+                attr: { id: 'quick-completed-task-form', novalidate: 'novalidate' }
+            }) }}
+
+            <div class="row g-3">
+                <div class="col-12">
+                    {{ form_label(quickCompletedTaskForm.title) }}
+                    {{ form_widget(quickCompletedTaskForm.title) }}
+                    {{ form_errors(quickCompletedTaskForm.title) }}
+                </div>
+                <div class="col-12">
+                    {{ form_label(quickCompletedTaskForm.description) }}
+                    {{ form_widget(quickCompletedTaskForm.description) }}
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button type="button" id="btn-add-completed-task" class="btn btn-success" data-controller="quick-task" data-quick-task-form-id-value="quick-completed-task-form" data-action="click->quick-task#submit">
+                    <i class="fa fa-circle-check"></i> Zapisz klienta i dodaj zakończone zadanie
+                </button>
+            </div>
+
+            {{ form_end(quickCompletedTaskForm) }}
+        </div>
+    </div>
+
+    
+    {% endif %}
+
+    {% endif %}
+    </div>
+{% endblock %}
+
+{% block page_actions %}
+    {{ parent() }}
+    <button type="button"
+            id="btn-save-and-add-task"
+            class="btn btn-secondary"
+            data-controller="client-form"
+            data-client-form-mode-value="edit"
+            data-action="click->client-form#saveAndGoTasks">
+        <i class="fa fa-list-check"></i> Zapisz i dodaj zadanie
+    </button>
+{% endblock page_actions %}
+

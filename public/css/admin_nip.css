@@ -1,0 +1,18 @@
+.nip-counter-wrap { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 12px; }
+.nip-counter { font-weight: 600; padding: 2px 8px; border-radius: 5px; transition: background 0.2s, color 0.2s; }
+.nip-counter.ok  { background: #e6f7ed; color: #2fb344; }
+.nip-counter.bad { background: #fff3e0; color: #f76707; }
+.nip-counter.empty { background: #f1f5f9; color: #94a3b8; }
+
+#nip-confirm-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.55); align-items: center; justify-content: center; }
+#nip-confirm-overlay.active { display: flex; }
+#nip-confirm-box { background: #fff; border-radius: 14px; padding: 36px 32px 28px; max-width: 420px; width: 92%; box-shadow: 0 24px 64px rgba(0,0,0,0.22); text-align: center; }
+#nip-confirm-box .nip-modal-icon { width: 60px; height: 60px; background: #fff3e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 26px; color: #f76707; }
+#nip-confirm-box h3 { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0 0 10px; }
+#nip-confirm-box p { font-size: 14px; color: #626976; margin: 0 0 24px; line-height: 1.6; }
+#nip-confirm-box .nip-modal-btns { display: flex; gap: 10px; }
+#nip-confirm-box .nip-modal-btns button { flex: 1; padding: 11px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: opacity 0.15s; }
+#nip-confirm-box .nip-modal-btns button:hover { opacity: 0.85; }
+#nip-btn-cancel { background: #f1f5f9; color: #626976; border: 1px solid #e6e7e9 !important; }
+#nip-btn-confirm { background: #f76707; color: #fff; }
+

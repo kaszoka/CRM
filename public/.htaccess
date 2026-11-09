@@ -1,0 +1,153 @@
+# ============================================================
+#  .HTACCESS - Podstawowa konfiguracja Apache
+# ============================================================
+
+# --------------------------------------------------------------
+# 1. WYŁĄCZ LISTOWANIE KATALOGÓW
+# --------------------------------------------------------------
+Options -Indexes
+DirectoryIndex index.php
+
+# --------------------------------------------------------------
+# 2. WŁĄCZ MOD_REWRITE (wymagane dla "czystych" URL-i / CMS-ów)
+# --------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Przekieruj wszystkie żądania przez index.php (np. dla Laravel, WordPress, itd.)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# --------------------------------------------------------------
+# 3. FORCE HTTPS (przekierowanie HTTP → HTTPS)
+# --------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# --------------------------------------------------------------
+# 4. WWW → non-WWW (lub odwrotnie – odkomentuj to czego używasz)
+# --------------------------------------------------------------
+# non-WWW → WWW:
+# RewriteCond %{HTTP_HOST} !^www\. [NC]
+# RewriteRule ^ https://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# WWW → non-WWW:
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# --------------------------------------------------------------
+# 5. NAGŁÓWKI BEZPIECZEŃSTWA
+# --------------------------------------------------------------
+<IfModule mod_headers.c>
+    # Zapobiega klikaniu w ramki (clickjacking)
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Wyłącza sniffowanie MIME
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Włącza XSS Protection w starszych przeglądarkach
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Kontrola referera
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # HSTS – wymusza HTTPS przez rok (włącz gdy masz stały certyfikat SSL)
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# --------------------------------------------------------------
+# 6. CACHE PRZEGLĄDARKI (przyspieszenie ładowania)
+# --------------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    # Obrazy
+    ExpiresByType image/jpeg          "access plus 1 year"
+    ExpiresByType image/png           "access plus 1 year"
+    ExpiresByType image/gif           "access plus 1 year"
+    ExpiresByType image/webp          "access plus 1 year"
+    ExpiresByType image/svg+xml       "access plus 1 year"
+    ExpiresByType image/x-icon        "access plus 1 year"
+
+    # CSS & JS
+    ExpiresByType text/css            "access plus 6 months"
+    ExpiresByType application/javascript "access plus 6 months"
+
+    # Czcionki
+    ExpiresByType font/woff2          "access plus 1 year"
+    ExpiresByType font/woff           "access plus 1 year"
+
+    # HTML / dane
+    ExpiresByType text/html           "access plus 1 hour"
+    ExpiresByType application/json    "access plus 0 seconds"
+</IfModule>
+
+# --------------------------------------------------------------
+# 7. KOMPRESJA GZIP (mniejsze rozmiary przesyłanych plików)
+# --------------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE font/woff2
+    AddOutputFilterByType DEFLATE font/woff
+</IfModule>
+
+# --------------------------------------------------------------
+# 8. DOMYŚLNY PLIK INDEKSU
+# --------------------------------------------------------------
+DirectoryIndex index.php index.html index.htm
+
+# --------------------------------------------------------------
+# 9. UKRYJ WRAŻLIWE PLIKI I KATALOGI
+# --------------------------------------------------------------
+<FilesMatch "(^\.htaccess|\.env|composer\.json|composer\.lock|package\.json|\.git|\.env_local)">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# --------------------------------------------------------------
+
+# --------------------------------------------------------------
+# 11. USTAWIENIA PHP (działa gdy PHP działa jako moduł Apache)
+# --------------------------------------------------------------
+<IfModule mod_php.c>
+    php_value upload_max_filesize 64M
+    php_value post_max_size       64M
+    php_value max_execution_time  120
+    php_value memory_limit        256M
+    php_flag  display_errors      Off
+</IfModule>
+
+# --------------------------------------------------------------
+# 12. SERWER WIDZI PLIKI BEZ ROZSZERZENIA (np. /strona zamiast /strona.php)
+# --------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.+)$ $1.php [L,QSA]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+</IfModule>
+
+# Opcjonalnie – możesz też dodać to bezpośrednio:
+# Options +MultiViews
+# (MultiViews pozwala Apache'owi automatycznie dopasowywać pliki po nazwie)
+
+# ============================================================
+# KONIEC PLIKU
+# ============================================================

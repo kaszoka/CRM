@@ -1,0 +1,408 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}{% endblock %}
+
+{% block page_content %}
+<style>
+    /* ── Layout ─────────────────────────────────── */
+    .sugg-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .sugg-header h1 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--tabler-text, #1e293b);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .sugg-header h1 .h1-icon {
+        width: 36px; height: 36px;
+        background: #fff3e0; color: #f76707;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px;
+    }
+    .sugg-header h1 .h1-count {
+        font-size: 13px; font-weight: 400;
+        color: var(--tabler-text-muted, #94a3b8);
+        margin-left: 4px;
+    }
+    .btn-new {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 9px 18px;
+        background: #206bc4; color: #fff;
+        border-radius: 8px; font-size: 13.5px; font-weight: 500;
+        text-decoration: none; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .btn-new:hover { background: #1a56a0; }
+
+    /* ── Toolbar ─────────────────────────────────── */
+    .sugg-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+        padding: 14px 16px;
+        background: var(--tabler-card-bg, #fff);
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 8px;
+    }
+    .sugg-search {
+        flex: 1; min-width: 200px; position: relative;
+    }
+    .sugg-search input {
+        width: 100%; box-sizing: border-box;
+        padding: 8px 12px 8px 34px;
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 7px; font-size: 13.5px;
+        background: var(--tabler-input-bg, #f8fafc);
+        color: var(--tabler-text, #1e293b); outline: none;
+        transition: border-color 0.15s;
+    }
+    .sugg-search input:focus { border-color: #206bc4; background: var(--tabler-card-bg, #fff); }
+    .sugg-search .si { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 12px; pointer-events: none; }
+    .sugg-filter-tag select {
+        padding: 8px 12px;
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 7px; font-size: 13.5px;
+        background: var(--tabler-input-bg, #f8fafc);
+        color: var(--tabler-text, #1e293b); outline: none; cursor: pointer;
+    }
+    .sugg-filter-tag select:focus { border-color: #206bc4; }
+    .btn-filter {
+        padding: 8px 16px;
+        background: #206bc4; color: #fff; border: none;
+        border-radius: 7px; font-size: 13px; font-weight: 500;
+        cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+        transition: background 0.15s; text-decoration: none; white-space: nowrap;
+    }
+    .btn-filter:hover { background: #1a56a0; }
+    .btn-clear {
+        padding: 8px 12px;
+        background: none; color: var(--tabler-text-muted, #626976);
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 7px; font-size: 13px; cursor: pointer;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+        white-space: nowrap; transition: all 0.15s;
+    }
+    .btn-clear:hover { background: var(--tabler-row-hover, #f1f5f9); }
+    .btn-clear-disabled { opacity: 0.4; pointer-events: none; cursor: default; }
+
+    /* ── Cards ─────────────────────────────────── */
+    .sugg-cards { display: flex; flex-direction: column; gap: 8px; }
+
+    .sugg-card {
+        background: var(--tabler-card-bg, #fff);
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 8px;
+        padding: 0;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        border-left: 4px solid #f76707;
+    }
+    .sugg-card:hover {
+        border-color: #c5d4e8;
+        border-left-color: #206bc4;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+        transform: translateY(-1px);
+    }
+
+    .sc-body {
+        flex: 1; padding: 14px 18px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px 16px;
+        min-width: 0;
+    }
+
+    .sc-left { min-width: 0; }
+    .sc-title {
+        font-size: 14.5px; font-weight: 700;
+        color: var(--tabler-text, #1e293b);
+        margin-bottom: 5px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sc-preview {
+        font-size: 12.5px; line-height: 1.5;
+        color: var(--tabler-text-muted, #626976);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .sc-bottom {
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        margin-top: 8px;
+    }
+    .sc-client-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 12px; font-weight: 500;
+        color: #206bc4;
+        background: #e7f1ff;
+        padding: 3px 9px; border-radius: 5px;
+    }
+    .sc-client-badge i { font-size: 10px; }
+    .sc-nip {
+        font-size: 11.5px; color: var(--tabler-text-muted, #94a3b8);
+    }
+    .sc-sep { color: var(--tabler-border, #dde1e7); font-size: 14px; }
+
+    .sc-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+    .sc-tag {
+        font-size: 11px; font-weight: 600;
+        padding: 2px 8px; border-radius: 4px;
+        background: var(--tabler-badge-info-bg, #e7f1ff);
+        color: var(--tabler-primary, #206bc4);
+        border: 1px solid var(--tabler-primary-lt, #c5d4e8);
+    }
+
+    .sc-right {
+        display: flex; flex-direction: column;
+        align-items: flex-end; justify-content: space-between;
+        gap: 8px; flex-shrink: 0;
+    }
+    .sc-date {
+        font-size: 11.5px; color: var(--tabler-text-muted, #94a3b8);
+        white-space: nowrap; text-align: right;
+    }
+    .sc-date strong { display: block; font-weight: 500; color: var(--tabler-text, #475569); }
+    .sc-actions {
+        display: flex; gap: 4px;
+    }
+    .sc-act {
+        width: 30px; height: 30px; border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        text-decoration: none; font-size: 12px;
+        transition: all 0.15s;
+        border: 1px solid transparent;
+        background: none; cursor: pointer;
+    }
+    .sc-act.view  { color: #206bc4; background: #f0f7ff; border-color: #dbeafe; }
+    .sc-act.view:hover  { background: #dbeafe; }
+    .sc-act.edit  { color: #475569; background: var(--tabler-row-hover, #f8fafc); border-color: var(--tabler-border, #e6e7e9); }
+    .sc-act.edit:hover  { background: #f1f5f9; border-color: #cbd5e1; }
+    .sc-act.delete { color: #dc2626; background: #fff5f5; border-color: #fecaca; }
+    .sc-act.delete:hover { background: #fee2e2; }
+
+    /* ── Empty ─────────────────────────────────── */
+    .sugg-empty {
+        text-align: center; padding: 60px 20px;
+        color: var(--tabler-text-muted, #94a3b8);
+        background: var(--tabler-card-bg, #fff);
+        border: 1px dashed var(--tabler-border, #d1d5db);
+        border-radius: 8px;
+    }
+    .sugg-empty i { font-size: 36px; margin-bottom: 12px; display: block; opacity: 0.35; }
+    .sugg-empty p { font-size: 14px; margin: 0 0 16px; }
+
+    /* ── Pagination ─────────────────────────────── */
+    .pag-wrap {
+        margin-top: 16px;
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 10px;
+    }
+    .pag-info { font-size: 12.5px; color: var(--tabler-text-muted, #94a3b8); }
+    .pag-links { display: flex; gap: 4px; }
+    .pag-links a, .pag-links span {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 32px; height: 32px; border-radius: 6px;
+        font-size: 13px; text-decoration: none;
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        color: var(--tabler-text, #1e293b);
+        background: var(--tabler-card-bg, #fff);
+        transition: all 0.15s;
+    }
+    .pag-links a:hover { background: var(--tabler-row-hover, #f8fafc); }
+    .pag-links span.cur { background: #206bc4; color: #fff; border-color: #206bc4; font-weight: 700; }
+    .pag-links span.dis { color: #cbd5e1; cursor: default; }
+
+    /* ── Responsive ─────────────────────────────── */
+    @media (max-width: 640px) {
+        .sugg-header { flex-direction: column; align-items: stretch; }
+        .sugg-toolbar { flex-direction: column; }
+        .sugg-search { min-width: 100%; }
+        .sc-body { grid-template-columns: 1fr; }
+        .sc-right { flex-direction: row; align-items: center; }
+    }
+</style>
+
+{% set currentSearch = app.request.query.get('query') %}
+{% set currentTag    = app.request.query.get('f_tag') %}
+{% set hasFilters    = currentSearch or currentTag %}
+{% set newUrl = ea_url().setController('App\\Controller\\Admin\\SuggestionCrudController').setAction('new') %}
+
+{% set allTags = [] %}
+{% for suggestion in entities %}
+    {% for tag in suggestion.instance.tags %}
+        {% if (tag.id ~ '') not in allTags|map(t => t.id ~ '') %}
+            {% set allTags = allTags|merge([tag]) %}
+        {% endif %}
+    {% endfor %}
+{% endfor %}
+
+<div class="sugg-header">
+    <h1>
+        <span class="h1-icon"><i class="fa fa-lightbulb"></i></span>
+        Sugestie
+        <span class="h1-count">({{ paginator.numResults }})</span>
+    </h1>
+    <a href="{{ newUrl }}" class="btn-new"><i class="fa fa-plus"></i> Nowa sugestia</a>
+</div>
+
+<form method="GET" action="">
+    <input type="hidden" name="crudAction" value="index">
+    <input type="hidden" name="crudControllerFqcn" value="{{ app.request.query.get('crudControllerFqcn') }}">
+    <div class="sugg-toolbar">
+        <div class="sugg-search">
+            <i class="fa fa-search si"></i>
+            <input type="text" name="query" placeholder="Szukaj po tytule, treści, kliencie, NIP…" value="{{ currentSearch }}">
+        </div>
+        <div class="sugg-filter-tag">
+            <select name="f_tag">
+                <option value="">Wszystkie tagi</option>
+                {% for tag in allTags %}
+                    <option value="{{ tag.id }}" {{ currentTag == (tag.id ~ '') ? 'selected' : '' }}>{{ tag.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn-filter"><i class="fa fa-filter"></i> Filtruj</button>
+        <a href="/admin?crudAction=index&crudControllerFqcn=App%5CController%5CAdmin%5CSuggestionCrudController"
+           class="btn-clear{% if not hasFilters %} btn-clear-disabled{% endif %}"
+           title="Wyczyść filtry">
+            <i class="fa fa-xmark"></i> Wyczyść
+        </a>
+    </div>
+</form>
+
+{% if entities|length > 0 %}
+<div class="sugg-cards">
+    {% set ctrl = 'App\\Controller\\Admin\\SuggestionCrudController' %}
+    {% for suggestion in entities %}
+        {% set s = suggestion.instance %}
+        {% set detailUrl = ea_url().setController(ctrl).setAction('detail').setEntityId(s.id) %}
+        {% set editUrl   = ea_url().setController(ctrl).setAction('edit').setEntityId(s.id) %}
+
+        <div class="sugg-card" onclick="window.location='{{ detailUrl }}'">
+            <div class="sc-body">
+                <div class="sc-left">
+                    <div class="sc-title">{{ s.title }}</div>
+                    {% if s.content %}
+                        <div class="sc-preview">{{ s.content }}</div>
+                    {% endif %}
+                    <div class="sc-bottom">
+                        {% if s.client %}
+                            <span class="sc-client-badge">
+                                <i class="fa fa-building"></i>{{ s.client.companyName }}
+                            </span>
+                            <span class="sc-nip">{{ s.client.nip }}</span>
+                        {% else %}
+                            <span style="font-size:12px;color:#94a3b8;"><i class="fa fa-ban" style="margin-right:4px;"></i>Brak klienta</span>
+                        {% endif %}
+                        {% if s.tags|length > 0 %}
+                            <span class="sc-sep">·</span>
+                            <div class="sc-tags">
+                                {% for tag in s.tags %}
+                                    <span class="sc-tag">{{ tag.name }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="sc-right" onclick="event.stopPropagation()">
+                    <div class="sc-date">
+                        <strong>{{ s.createdAt|date('d.m.Y') }}</strong>
+                        {{ s.createdAt|date('H:i') }}
+                        {% if s.createdBy %}
+                            <div style="margin-top:4px;font-size:11.5px;color:var(--tabler-text-muted,#94a3b8);white-space:nowrap;">
+                                <i class="fa fa-user-plus"></i>
+                                {{ s.createdBy.firstName }} {{ s.createdBy.lastName }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="sc-actions">
+                        <a href="{{ detailUrl }}" class="sc-act view" title="Podgląd"><i class="fa fa-eye"></i></a>
+                        <a href="{{ editUrl }}"   class="sc-act edit" title="Edytuj"><i class="fa fa-pen"></i></a>
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <form id="del-sugg-{{ s.id }}" method="POST"
+                                  action="{{ ea_url().setController(ctrl).setAction('delete').setEntityId(s.id) }}"
+                                  style="display:inline;margin:0;">
+                                <input type="hidden" name="token" value="{{ csrf_token('ea-delete') }}">
+                                <button type="button" class="sc-act delete" title="Usuń"
+                                        onclick="openDeleteModal('del-sugg-{{ s.id }}', '{{ s.title|e('js') }}')">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{% if paginator.lastPage > 1 %}
+<div class="pag-wrap">
+    <div class="pag-info">Strona {{ paginator.currentPage }} z {{ paginator.lastPage }} &nbsp;·&nbsp; {{ paginator.numResults }} sugestii</div>
+    <div class="pag-links">
+        {% if paginator.hasPreviousPage %}
+            <a href="{{ ea_url().setController(ctrl).setPageNumber(1) }}"><i class="fa fa-angles-left"></i></a>
+            <a href="{{ ea_url().setController(ctrl).setPageNumber(paginator.previousPage) }}"><i class="fa fa-angle-left"></i></a>
+        {% else %}
+            <span class="dis"><i class="fa fa-angles-left"></i></span>
+            <span class="dis"><i class="fa fa-angle-left"></i></span>
+        {% endif %}
+        {% for page in max(1, paginator.currentPage - 2)..min(paginator.lastPage, paginator.currentPage + 2) %}
+            {% if page == paginator.currentPage %}
+                <span class="cur">{{ page }}</span>
+            {% else %}
+                <a href="{{ ea_url().setController(ctrl).setPageNumber(page) }}">{{ page }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if paginator.hasNextPage %}
+            <a href="{{ ea_url().setController(ctrl).setPageNumber(paginator.nextPage) }}"><i class="fa fa-angle-right"></i></a>
+            <a href="{{ ea_url().setController(ctrl).setPageNumber(paginator.lastPage) }}"><i class="fa fa-angles-right"></i></a>
+        {% else %}
+            <span class="dis"><i class="fa fa-angle-right"></i></span>
+            <span class="dis"><i class="fa fa-angles-right"></i></span>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="sugg-empty">
+    <i class="fa fa-lightbulb"></i>
+    <p>{% if hasFilters %}Brak sugestii pasujących do filtrów.{% else %}Brak sugestii. Utwórz pierwszą klikając „Nowa sugestia".{% endif %}</p>
+    {% if not hasFilters %}
+        <a href="{{ newUrl }}" class="btn-new" style="display:inline-flex;"><i class="fa fa-plus"></i> Nowa sugestia</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<div id="delete-modal" data-controller="delete-modal" data-delete-modal-target="modal" data-action="click->delete-modal#backdrop" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:36px 32px 28px;max-width:400px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,0.22);text-align:center;">
+        <div style="width:60px;height:60px;background:#fce8e8;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+            <i class="fa fa-trash" style="color:#d63939;font-size:24px;"></i>
+        </div>
+        <h3 style="font-size:18px;font-weight:700;color:#1e293b;margin:0 0 10px;">Potwierdź usunięcie</h3>
+        <p id="delete-modal-text" data-delete-modal-target="text" style="font-size:14px;color:#626976;margin:0 0 24px;line-height:1.5;"></p>
+        <div style="display:flex;gap:10px;">
+            <button type="button" data-action="delete-modal#close" onclick="closeDeleteModal()" style="flex:1;padding:11px;border-radius:8px;border:1px solid #e6e7e9;background:#fff;color:#626976;font-size:14px;font-weight:500;cursor:pointer;">Anuluj</button>
+            <button type="button" data-action="delete-modal#confirm" id="delete-modal-confirm" style="flex:1;padding:11px;border-radius:8px;border:none;background:#d63939;color:#fff;font-size:14px;font-weight:700;cursor:pointer;"><i class="fa fa-trash"></i> Tak, usuń</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+

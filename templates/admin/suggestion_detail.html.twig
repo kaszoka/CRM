@@ -1,0 +1,316 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}{% endblock %}
+
+{% block page_content %}
+{% set s    = entity.instance %}
+{% set ctrl = 'App\\Controller\\Admin\\SuggestionCrudController' %}
+<style>
+    /* ── Header ─────────────────────────────── */
+    .sd-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 18px;
+        margin-bottom: 28px;
+        padding-bottom: 22px;
+        border-bottom: 1px solid var(--tabler-border, #e6e7e9);
+    }
+    .sd-header-icon {
+        width: 56px; height: 56px;
+        border-radius: 12px;
+        background: #fff3e0; color: #f76707;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; flex-shrink: 0;
+    }
+    .sd-header-body { flex: 1; min-width: 0; }
+    .sd-header-body h1 {
+        font-size: 21px; font-weight: 700;
+        color: var(--tabler-text, #1e293b);
+        margin: 0 0 6px; line-height: 1.3;
+        word-break: break-word;
+    }
+    .sd-meta {
+        display: flex; flex-wrap: wrap; gap: 10px;
+        font-size: 12.5px; color: var(--tabler-text-muted, #94a3b8);
+        margin-bottom: 10px;
+    }
+    .sd-meta span { display: inline-flex; align-items: center; gap: 5px; }
+    .sd-meta a { color: #206bc4; text-decoration: none; }
+    .sd-meta a:hover { text-decoration: underline; }
+
+    .sd-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+    .sd-tag {
+        font-size: 11.5px; font-weight: 600;
+        padding: 3px 10px; border-radius: 5px;
+        background: var(--tabler-badge-info-bg, #e7f1ff);
+        color: var(--tabler-primary, #206bc4);
+        border: 1px solid var(--tabler-primary-lt, #c5d4e8);
+    }
+
+    /* ── Action buttons ─────────────────────────── */
+    .sd-actions {
+        margin-left: auto;
+        display: flex; gap: 8px;
+        flex-shrink: 0; align-items: flex-start;
+        flex-wrap: wrap;
+    }
+    .sd-btn {
+        padding: 8px 16px; border-radius: 8px;
+        font-size: 13px; font-weight: 500;
+        text-decoration: none;
+        display: inline-flex; align-items: center; gap: 6px;
+        transition: all 0.15s ease; cursor: pointer; border: none;
+        white-space: nowrap;
+    }
+    .sd-btn.back  { background: var(--tabler-card-bg, #fff); border: 1px solid var(--tabler-border, #e6e7e9); color: var(--tabler-text-muted, #626976); }
+    .sd-btn.back:hover  { background: var(--tabler-row-hover, #f8fafc); color: var(--tabler-text, #1e293b); }
+    .sd-btn.edit  { background: #206bc4; color: #fff; }
+    .sd-btn.edit:hover  { background: #1a56a0; }
+    .sd-btn.delete { background: var(--tabler-card-bg, #fff); border: 1px solid var(--tabler-border, #e6e7e9); color: #d63939; }
+    .sd-btn.delete:hover { background: #fce8e8; border-color: #f5c2c2; }
+
+    /* ── Grid ─────────────────────────────────── */
+    .sd-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    .sd-full { grid-column: 1 / -1; }
+    @media (max-width: 900px) { .sd-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+        .sd-header { flex-direction: column; gap: 14px; }
+        .sd-header-body h1 { font-size: 17px; }
+        .sd-actions { margin-left: 0; width: 100%; }
+        .sd-btn { flex: 1; justify-content: center; }
+    }
+
+    /* ── Card component ──────────────────────── */
+    .sd-card {
+        background: var(--tabler-card-bg, #fff);
+        border: 1px solid var(--tabler-border, #e6e7e9);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .sd-card-head {
+        padding: 13px 18px;
+        border-bottom: 1px solid var(--tabler-border, #e6e7e9);
+        font-size: 13.5px; font-weight: 600;
+        color: var(--tabler-text, #1e293b);
+        display: flex; align-items: center; gap: 8px;
+        background: var(--tabler-row-hover, #f8fafc);
+    }
+    .sd-card-head i { color: var(--tabler-text-muted, #94a3b8); font-size: 13px; }
+
+    /* Content block */
+    .sd-content-body {
+        padding: 18px 20px;
+        font-size: 14px; line-height: 1.75;
+        color: var(--tabler-text, #1e293b);
+        white-space: pre-wrap;
+        min-height: 80px;
+    }
+    .sd-content-empty {
+        padding: 28px 20px;
+        color: var(--tabler-text-muted, #94a3b8);
+        font-size: 13.5px; font-style: italic; text-align: center;
+    }
+
+    /* Row component */
+    .sd-row {
+        display: flex; padding: 11px 18px;
+        border-bottom: 1px solid var(--tabler-border, #f4f6f8);
+    }
+    .sd-row:last-child { border-bottom: none; }
+    .sd-row-label {
+        width: 140px; flex-shrink: 0;
+        font-size: 12.5px; font-weight: 500;
+        color: var(--tabler-text-muted, #626976);
+        padding-top: 2px;
+    }
+    .sd-row-value {
+        flex: 1; font-size: 13.5px;
+        color: var(--tabler-text, #1e293b); line-height: 1.5;
+    }
+    .sd-row-value a { color: #206bc4; text-decoration: none; }
+    .sd-row-value a:hover { text-decoration: underline; }
+
+    /* Badges */
+    .sd-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 11.5px; font-weight: 600;
+        padding: 3px 9px; border-radius: 5px;
+    }
+    .sd-badge.blue   { background: #e7f1ff; color: #206bc4; }
+    .sd-badge.green  { background: #e6f7ed; color: #2fb344; }
+    .sd-badge.orange { background: #fff3e0; color: #f76707; }
+    .sd-badge.gray   { background: var(--tabler-badge-info-bg, #e7f1ff); color: var(--tabler-primary, #206bc4); border: 1px solid var(--tabler-primary-lt, #c5d4e8); }
+    .sd-badge-row { display: flex; flex-wrap: wrap; gap: 5px; padding: 12px 18px; }
+    .sd-empty-cell {
+        padding: 20px 18px;
+        color: var(--tabler-text-muted, #94a3b8);
+        font-size: 13px; font-style: italic;
+    }
+
+    /* Client mini-card inside card */
+    .sd-client-inner {
+        display: flex; align-items: center; gap: 14px;
+        padding: 14px 18px;
+    }
+    .sd-client-avatar {
+        width: 42px; height: 42px; border-radius: 10px;
+        background: #e7f1ff; color: #206bc4;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 15px; font-weight: 700; flex-shrink: 0;
+    }
+    .sd-client-name {
+        font-size: 14px; font-weight: 700;
+        color: var(--tabler-text, #1e293b); margin-bottom: 2px;
+    }
+    .sd-client-nip {
+        font-size: 12px; color: var(--tabler-text-muted, #94a3b8);
+    }
+    .sd-client-link {
+        margin-left: auto; flex-shrink: 0;
+        color: #206bc4; text-decoration: none; font-size: 12.5px;
+        display: inline-flex; align-items: center; gap: 5px;
+    }
+    .sd-client-link:hover { text-decoration: underline; }
+</style>
+
+<div class="sd-header">
+    <div class="sd-header-icon"><i class="fa fa-lightbulb"></i></div>
+    <div class="sd-header-body">
+        <h1>{{ s.title ?: '(bez tytułu)' }}</h1>
+        <div class="sd-meta">
+            <span><i class="fa fa-calendar-alt"></i> Dodano {{ s.createdAt|date('d.m.Y') }} o {{ s.createdAt|date('H:i') }}</span>
+            {% if s.createdBy %}
+                <span>·</span>
+                <span><i class="fa fa-user-plus"></i> {{ s.createdBy.firstName }} {{ s.createdBy.lastName }}</span>
+            {% endif %}
+            {% if s.client %}
+                <span>·</span>
+                <span>
+                    <i class="fa fa-building"></i>
+                    <a href="{{ ea_url().setController('App\\Controller\\Admin\\ClientCrudController').setAction('detail').setEntityId(s.client.id) }}">
+                        {{ s.client.companyName }}
+                    </a>
+                </span>
+                <span style="color:var(--tabler-border,#d1d5db);">|</span>
+                <span><i class="fa fa-hashtag" style="font-size:10px;"></i> {{ s.client.nip }}</span>
+            {% endif %}
+        </div>
+        {% if s.tags|length > 0 %}
+            <div class="sd-tags">
+                {% for tag in s.tags %}
+                    <span class="sd-tag">{{ tag.name }}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+    <div class="sd-actions">
+        <a href="{{ ea_url().setController('App\\Controller\\Admin\\SuggestionCrudController').setAction('index') }}" class="sd-btn back">
+            <i class="fa fa-arrow-left"></i> Wróć
+        </a>
+        <a href="{{ ea_url().setController(ctrl).setAction('edit').setEntityId(s.id) }}" class="sd-btn edit">
+            <i class="fa fa-pen"></i> Edytuj
+        </a>
+        {% if is_granted('ROLE_ADMIN') %}
+            <form id="del-sugg-detail" method="POST"
+                  action="{{ ea_url().setController(ctrl).setAction('delete').setEntityId(s.id) }}"
+                  style="display:inline;margin:0;">
+                <input type="hidden" name="token" value="{{ csrf_token('ea-delete') }}">
+                <button type="button" class="sd-btn delete"
+                        onclick="openDeleteModal('del-sugg-detail', '{{ s.title|e('js') }}')">
+                    <i class="fa fa-trash"></i> Usuń
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="sd-grid">
+
+    <div class="sd-card sd-full">
+        <div class="sd-card-head">
+            <i class="fa fa-comment-dots"></i> Treść sugestii
+        </div>
+        {% if s.content %}
+            <div class="sd-content-body">{{ s.content }}</div>
+        {% else %}
+            <div class="sd-content-empty"><i class="fa fa-minus-circle" style="margin-right:5px;"></i>Brak treści</div>
+        {% endif %}
+    </div>
+
+    <div class="sd-card">
+        <div class="sd-card-head"><i class="fa fa-building"></i> Powiązany klient</div>
+        {% if s.client %}
+            <div class="sd-client-inner">
+                <div class="sd-client-avatar">{{ s.client.companyName|slice(0,2)|upper }}</div>
+                <div>
+                    <div class="sd-client-name">{{ s.client.companyName }}</div>
+                    <div class="sd-client-nip">NIP: {{ s.client.nip }}</div>
+                </div>
+                <a class="sd-client-link"
+                   href="{{ ea_url().setController('App\\Controller\\Admin\\ClientCrudController').setAction('detail').setEntityId(s.client.id) }}">
+                    <i class="fa fa-arrow-up-right-from-square"></i> Otwórz
+                </a>
+            </div>
+            <div style="border-top:1px solid var(--tabler-border,#f4f6f8);">
+                {% if s.client.phone %}
+                    <div class="sd-row">
+                        <div class="sd-row-label">Telefon</div>
+                        <div class="sd-row-value"><a href="tel:{{ s.client.phone }}"><i class="fa fa-phone" style="margin-right:4px;font-size:11px;"></i>{{ s.client.phone }}</a></div>
+                    </div>
+                {% endif %}
+                {% if s.client.email %}
+                    <div class="sd-row">
+                        <div class="sd-row-label">E-mail</div>
+                        <div class="sd-row-value"><a href="mailto:{{ s.client.email }}"><i class="fa fa-envelope" style="margin-right:4px;font-size:11px;"></i>{{ s.client.email }}</a></div>
+                    </div>
+                {% endif %}
+                {% if s.client.fullAddress %}
+                    <div class="sd-row">
+                        <div class="sd-row-label">Adres</div>
+                        <div class="sd-row-value">{{ s.client.fullAddress }}</div>
+                    </div>
+                {% endif %}
+                {% if not s.client.phone and not s.client.email and not s.client.fullAddress %}
+                    <div class="sd-empty-cell">Brak dodatkowych danych kontaktowych</div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="sd-empty-cell"><i class="fa fa-link-slash" style="margin-right:5px;"></i>Klient usunięty lub niepowiązany</div>
+        {% endif %}
+    </div>
+
+    <div class="sd-card">
+        <div class="sd-card-head"><i class="fa fa-tags"></i> Tagi</div>
+        {% if s.tags|length > 0 %}
+            <div class="sd-badge-row">
+                {% for tag in s.tags %}
+                    <span class="sd-badge gray">{{ tag.name }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="sd-empty-cell"><i class="fa fa-tag" style="margin-right:5px;opacity:.5;"></i>Brak tagów — dodaj je edytując tę sugestię.</div>
+        {% endif %}
+    </div>
+
+</div>
+
+<div id="delete-modal" data-controller="delete-modal" data-delete-modal-target="modal" data-action="click->delete-modal#backdrop" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:36px 32px 28px;max-width:400px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,0.22);text-align:center;">
+        <div style="width:60px;height:60px;background:#fce8e8;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+            <i class="fa fa-trash" style="color:#d63939;font-size:24px;"></i>
+        </div>
+        <h3 style="font-size:18px;font-weight:700;color:#1e293b;margin:0 0 10px;">Potwierdź usunięcie</h3>
+        <p id="delete-modal-text" data-delete-modal-target="text" style="font-size:14px;color:#626976;margin:0 0 24px;line-height:1.5;"></p>
+        <div style="display:flex;gap:10px;">
+            <button type="button" data-action="delete-modal#close" onclick="closeDeleteModal()" style="flex:1;padding:11px;border-radius:8px;border:1px solid #e6e7e9;background:#fff;color:#626976;font-size:14px;font-weight:500;cursor:pointer;">Anuluj</button>
+            <button type="button" data-action="delete-modal#confirm" id="delete-modal-confirm" style="flex:1;padding:11px;border-radius:8px;border:none;background:#d63939;color:#fff;font-size:14px;font-weight:700;cursor:pointer;"><i class="fa fa-trash"></i> Tak, usuń</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+

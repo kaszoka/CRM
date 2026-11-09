@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM POLA - Ustawienia 2FA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0f172a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e5e7eb;
+        }
+        .twofa-wrapper {
+            width: 100%;
+            max-width: 520px;
+            padding: 24px 20px;
+        }
+        .twofa-card {
+            background: #020617;
+            border-radius: 16px;
+            border: 1px solid #1f2937;
+            padding: 20px 22px 20px;
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.75);
+        }
+        .twofa-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .twofa-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .twofa-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1d4ed8;
+            color: #eff6ff;
+            font-size: 14px;
+        }
+        .twofa-status {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 999px;
+        }
+        .twofa-status.on {
+            background: #bbf7d0;
+            color: #166534;
+        }
+        .twofa-status.off {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .twofa-body {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-bottom: 14px;
+        }
+        .twofa-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .twofa-btn {
+            border-radius: 10px;
+            border: 1px solid transparent;
+            padding: 7px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            background: #111827;
+            color: #e5e7eb;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .twofa-btn.primary {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #052e16;
+            border-color: transparent;
+        }
+        .twofa-btn.danger {
+            background: #1f2937;
+            color: #fee2e2;
+            border-color: #b91c1c;
+        }
+        .twofa-qr {
+            margin-top: 14px;
+            padding: 14px 12px 12px;
+            border-radius: 12px;
+            background: #020617;
+            border: 1px dashed rgba(148, 163, 184, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .twofa-qr img,
+        .twofa-qr canvas,
+        #twofa-qr-img > img,
+        #twofa-qr-img > canvas {
+            display: block;
+            border-radius: 6px;
+            background: #fff;
+            padding: 14px;  /* quiet zone – wymagany przez standard QR */
+            box-sizing: content-box;
+        }
+        .twofa-qr p {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 0;
+            text-align: center;
+        }
+        @media (max-width: 480px) {
+            body { align-items: flex-start; padding-top: 32px; }
+            .twofa-wrapper { padding: 16px; }
+            .twofa-card { padding: 18px 14px; }
+        }
+    </style>
+</head>
+<body>
+<div class="twofa-wrapper">
+    <div class="twofa-card">
+        <div class="twofa-header">
+            <div class="twofa-title">
+                <div class="twofa-icon"><i class="fa fa-shield-alt"></i></div>
+                Uwierzytelnianie dwuskładnikowe (2FA)
+            </div>
+            <span class="twofa-status {{ isEnabled ? 'on' : 'off' }}">
+                {{ isEnabled ? 'Włączone' : 'Wyłączone' }}
+            </span>
+        </div>
+
+        <div class="twofa-body">
+            {% if isEnabled %}
+                Logowanie do Twojego konta wymaga podania hasła oraz jednorazowego kodu z aplikacji Google Authenticator
+                (lub innej zgodnej z TOTP). Możesz zeskanować kod QR poniżej, aby dodać konto na kolejnym urządzeniu.
+            {% else %}
+                Możesz dodatkowo zabezpieczyć konto, włączając 2FA z wykorzystaniem aplikacji Google Authenticator.
+                Po włączeniu przy każdym logowaniu będzie wymagany jednorazowy kod z aplikacji.
+            {% endif %}
+        </div>
+
+        {% if isEnabled and qrCodeUri %}
+            <div class="twofa-qr" data-controller="two-factor" data-two-factor-uri-value="{{ qrCodeUri }}">
+                <div id="twofa-qr-img" data-two-factor-target="qr" data-uri="{{ qrCodeUri }}"></div>
+                <p><strong>Krok 1:</strong> Zeskanuj kod QR w Google Authenticator lub innej aplikacji TOTP.</p>
+            </div>
+
+            <div style="margin-top:14px;padding:12px 14px;border-radius:12px;background:#0f172a;border:1px solid #1f2937;">
+                <p style="font-size:12px;color:#9ca3af;margin-bottom:8px;">
+                    <strong style="color:#e5e7eb;">Krok 2 (alternatywnie):</strong>
+                    Jeśli QR nie działa – wpisz ten klucz ręcznie w aplikacji:
+                </p>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <code id="twofa-secret" data-two-factor-target="secret" style="font-size:14px;font-weight:700;letter-spacing:2px;color:#60a5fa;background:#1e3a5f;padding:6px 12px;border-radius:8px;user-select:all;word-break:break-all;">
+                        {{ user.googleAuthenticatorSecret }}
+                    </code>
+                    <button type="button" data-action="click->two-factor#copySecret" onclick="copySecret()" style="font-size:12px;padding:5px 10px;border-radius:6px;border:1px solid #334155;background:#1f2937;color:#9ca3af;cursor:pointer;">
+                        <i class="fa fa-copy"></i> Kopiuj
+                    </button>
+                </div>
+                <p style="font-size:11px;color:#6b7280;margin-top:6px;">
+                    W aplikacji wybierz „Dodaj konto → Wpisz klucz konfiguracji". Typ: Czasowy (TOTP).
+                </p>
+            </div>
+        {% endif %}
+
+        <div class="twofa-actions">
+            <form method="post">
+                {% if not isEnabled %}
+                    <button type="submit" name="enable_2fa" class="twofa-btn primary">
+                        <i class="fa fa-toggle-on"></i> Włącz 2FA
+                    </button>
+                {% else %}
+                    <button type="submit" name="disable_2fa" class="twofa-btn danger"
+                            onclick="return confirm('Na pewno wyłączyć 2FA dla tego konta?');">
+                        <i class="fa fa-toggle-off"></i> Wyłącz 2FA
+                    </button>
+                {% endif %}
+            </form>
+        </div>
+        <div style="margin-top: 16px; text-align: right;">
+            <a href="{{ path('admin') }}" style="font-size: 12px; color: #9ca3af; text-decoration: underline;">
+                ← Wróć do panelu
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

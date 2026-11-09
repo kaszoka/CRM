@@ -1,0 +1,13 @@
+{% extends "@!EasyAdmin/layout.html.twig" %}
+
+{% block page_title %}CRM POLA{% if block('content_title') is defined and block('content_title') %} - {{ block('content_title') }}{% endif %}{% endblock %}
+
+{% block head_javascript %}
+    {{ parent() }}
+    {{ importmap('app') }}
+{% endblock %}
+
+{% block body_attr %}
+    {{ parent() }}
+    data-controller="toast row-click form-select-fix autocomplete-fix industry-create task-filter"
+{% endblock %}
